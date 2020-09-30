@@ -23,7 +23,8 @@ def helloworld(bot: QQbot):
         )
 
 
-isPing = Censor(lambda context: context.messageChain[1]['text'] == 'ping')
+isPing = Censor(lambda context: context.messageChain[1].type == 'Plain' and
+                context.messageChain[1]['text'] == 'ping')
 
 
 @register

@@ -12,7 +12,6 @@ setup(
     # requires
     python_requires='>=3.8',
     install_requires=[
-        'rich>=7.0',
         'aiohttp>=3.6',
         'websockets>=8.0',
         'requests>=2.18',
