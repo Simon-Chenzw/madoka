@@ -24,7 +24,8 @@ class BotBase:
     def __enter__(self) -> 'BotBase':
         self._auth()
         self._verify()
-        logger.info("get event loop")
+        logger.info(f"successfully authenticate: session={self.session}")
+        logger.debug("get event loop")
         self.loop = asyncio.get_event_loop()
         return self
 
@@ -43,8 +44,6 @@ class BotBase:
         if res['code']:
             logger.error(f"auth error: code={res['code']}")
             raise Exception("error during auth")
-        else:
-            logger.info(f"Successfully authenticate: session={res['session']}")
         self.session = res['session']
 
     def _verify(self) -> None:
@@ -58,8 +57,6 @@ class BotBase:
         if res['code']:
             logger.error(f"verify error: code={res['code']}")
             raise Exception("error during verify")
-        else:
-            logger.info(f"Successfully verified")
 
     def _releaseSession(self) -> None:
         res = requests.post(

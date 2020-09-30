@@ -42,28 +42,25 @@ class SendUnit(BotBase):
         self._sendQueue.put_nowait(SendTask(method, data))
 
     async def _sender(self) -> None:
-        logger.info(f"start listen sendQueue")
+        logger.info(f"waiting for send")
         while True:
             task = await self._sendQueue.get()
-            logger.info(f"send: {task.method} {task.data}")
-            try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(
-                            f"http://{self.socket}/{task.method}",
-                            json=task.data,
-                    ) as res:
-                        js = await res.json()
-                        if js['code']:
-                            # TODO retry
-                            logger.warn(f"sender error: code={js['code']}")
-            except Exception as err:
-                logger.warn(f"sender {err.__class__.__name__}: {err}")
+            logger.debug(f"send: {task.method} {task.data}")
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                        f"http://{self.socket}/{task.method}",
+                        json=task.data,
+                ) as res:
+                    js = await res.json()
+                    if js['code']:
+                        # TODO retry
+                        logger.warn(f"send error: code={js['code']}")
             self._sendQueue.task_done()
 
     # special send method is below
 
     @staticmethod
-    def toMessageChain(message: Union[str, Text, MessageChain]) -> Any:
+    def _toMessageChain(message: Union[str, Text, MessageChain]) -> Any:
         if isinstance(message, str):
             return [PlainText(message).js]
         elif isinstance(message, Text):
@@ -105,7 +102,7 @@ class SendUnit(BotBase):
             method='sendFriendMessage',
             data={
                 "target": target,
-                "messageChain": self.toMessageChain(message),
+                "messageChain": self._toMessageChain(message),
             },
         )
 
@@ -121,7 +118,7 @@ class SendUnit(BotBase):
             method='sendGroupMessage',
             data={
                 "target": target,
-                "messageChain": self.toMessageChain(message),
+                "messageChain": self._toMessageChain(message),
             },
         )
 
@@ -139,7 +136,7 @@ class SendUnit(BotBase):
             data={
                 "qq": target,
                 "group": group,
-                "messageChain": self.toMessageChain(message),
+                "messageChain": self._toMessageChain(message),
             },
         )
 

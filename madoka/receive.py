@@ -33,7 +33,7 @@ class ReceiveUnit(BotBase):
         self.plugin.append(func)
 
     async def _receiver(self, bot: 'QQbot') -> None:
-        logger.info(f"start listen ws://{self.socket}/message?...")
+        logger.info(f"connect with ws://{self.socket}/message?...")
         async with websockets.connect(
                 f"ws://{self.socket}/message?sessionKey={self.session}"
         ) as websocket:

@@ -27,7 +27,7 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit):
         self.autoRegister = autoRegister
 
     def __enter__(self) -> 'QQbot':
-        logger.info(f"QQbot start: qid={self.qid}")
+        logger.info(f"bot start: QQ={self.qid}")
         super().__enter__()
         return self
 
