@@ -14,7 +14,6 @@ from .data import (
 from .filter import (
     Censor,
     auth,
-    isAdmin,
     isFriendMessage,
     isGroup,
     isGroupAdmin,

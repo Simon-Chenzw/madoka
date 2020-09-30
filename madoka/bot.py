@@ -3,7 +3,7 @@ from __future__ import absolute_import
 import asyncio
 import logging
 
-from ..register import getRegister, getScheduleRegistered
+from .register import getRegister, getScheduleRegistered
 from .receive import ReceiveUnit
 from .schedule import ScheduleUnit
 from .send import SendUnit

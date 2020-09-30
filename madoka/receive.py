@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Callable, List, Union
 
 import websockets
 
-from ..data import Context
+from .data import Context
 from .base import BotBase
 
 if TYPE_CHECKING:

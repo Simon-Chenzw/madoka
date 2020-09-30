@@ -6,8 +6,8 @@ from typing import Any, Union
 
 import aiohttp
 
-from ..data import (FriendSender, GroupSender, MessageChain, PlainText, Sender,
-                    TempSender, Text)
+from .data import (FriendSender, GroupSender, MessageChain, PlainText, Sender,
+                   TempSender, Text)
 from .base import BotBase
 
 logger = logging.getLogger(__name__)

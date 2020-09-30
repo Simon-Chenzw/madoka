@@ -3,7 +3,7 @@ from __future__ import absolute_import, annotations
 import logging
 from typing import TYPE_CHECKING, Callable, List
 
-from .bot.schedule import TimeTask
+from .schedule import TimeTask
 from .data import Context
 
 if TYPE_CHECKING:

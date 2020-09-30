@@ -48,23 +48,6 @@ def auth(filter: Censor):
     return wrapper
 
 
-def isAdmin(inGroup: bool = False):
-    def wrapper(
-        func: Callable[['QQbot', Context], None]
-    ) -> Callable[['QQbot', Context], None]:
-        @wraps(func)
-        def inner(bot: 'QQbot', context: Context):
-            if context.sender.id != bot.adminQQ:
-                return
-            elif not inGroup and isinstance(context.sender, GroupSender):
-                return
-            func(bot, context)
-
-        return inner
-
-    return wrapper
-
-
 isFriendMessage = Censor(
     lambda context: isinstance(context.sender, FriendSender), )
 isGroupMessage = Censor(
