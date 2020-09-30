@@ -18,14 +18,12 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit):
         socket: str,
         authKey: str,
         autoRegister: bool = True,
-        adminQQ: int = 0,
     ) -> None:
         super().__init__(
             qid=qid,
             socket=socket,
             authKey=authKey,
         )
-        self.adminQQ = adminQQ
         self.autoRegister = autoRegister
 
     def __enter__(self) -> 'QQbot':
