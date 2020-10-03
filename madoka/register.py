@@ -83,6 +83,9 @@ def runEveryWeek(
     minute: int = 0,
     second: int = 0,
 ) -> Callable[[Callable[[QQbot], None]], Callable[[QQbot], None]]:
+    """
+    :weekday: 0 means Monday, 6 means Sunday
+    """
     def register(func: Callable[[QQbot], None]) -> Callable[[QQbot], None]:
         scheduleRegistered.append(
             TimeTask.runEveryWeek(
