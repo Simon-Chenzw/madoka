@@ -30,7 +30,10 @@ class BotBase:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> bool:
-        self._releaseSession()
+        try:
+            self._releaseSession()
+        except Exception as err:
+            logger.warn(f"cannot release session because of {err}")
         return False
 
     def _auth(self) -> None:

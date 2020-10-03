@@ -55,10 +55,13 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit):
 
         # event loop
         logger.info("start event loop")
-        self.loop.run_until_complete(
-            asyncio.gather(
-                self._receiver(bot=self),
-                self._sender(),
-                self._schedule(bot=self),
-            ))
-        self.loop.close()
+        try:
+            self.loop.run_until_complete(
+                asyncio.gather(
+                    self._receiver(bot=self),
+                    self._sender(),
+                    self._schedule(bot=self),
+                ))
+        finally:
+            self.loop.run_until_complete(self.loop.shutdown_asyncgens())
+            self.loop.close()
