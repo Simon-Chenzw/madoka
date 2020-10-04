@@ -24,4 +24,7 @@ class asyncUnit(BotBase):
         while True:
             task = await self._asyncTaskQueue.get()
             logger.info(f"asynchronous task: {task.__name__}")
-            await task
+            try:
+                await task
+            except Exception as err:
+                logger.warn(f"{task.__name__} {err.__class__.__name__}: {err}")
