@@ -25,8 +25,9 @@ class getUnit(BotBase):
             logger.warn(f"messageFromId crashed: {err}")
             return None
         else:
+            logger.debug(f"messageFromId: id={id} res={res}")
             if res['code']:
-                logger.warn(f"messageFromId failed: {res['errorMessage']}")
+                logger.warn(f"messageFromId failed: {res['msg']}")
                 return None
             else:
                 return Context(res['data'])
