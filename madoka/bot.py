@@ -55,13 +55,12 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit):
 
         # event loop
         logger.info("start event loop")
-        try:
-            self.loop.run_until_complete(
-                asyncio.gather(
-                    self._receiver(bot=self),
-                    self._sender(),
-                    self._schedule(bot=self),
-                ))
-        finally:
-            self.loop.run_until_complete(self.loop.shutdown_asyncgens())
-            self.loop.close()
+        self.loop.run_until_complete(
+            asyncio.gather(
+                self._receiver(bot=self),
+                self._sender(),
+                self._schedule(bot=self),
+            ))
+        # It seem needn't to run this, because bot only exited by exceptions
+        # self.loop.run_until_complete(self.loop.shutdown_asyncgens())
+        # self.loop.close()
