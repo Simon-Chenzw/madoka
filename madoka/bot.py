@@ -5,13 +5,14 @@ import logging
 
 from .register import getRegister, getScheduleRegistered
 from .receive import ReceiveUnit
-from .schedule import ScheduleUnit
 from .send import SendUnit
+from .schedule import ScheduleUnit
+from .get import getUnit
 
 logger = logging.getLogger(__name__)
 
 
-class QQbot(ReceiveUnit, SendUnit, ScheduleUnit):
+class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, getUnit):
     def __init__(
         self,
         qid: int,

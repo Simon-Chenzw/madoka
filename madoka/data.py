@@ -11,8 +11,11 @@ class Context:
     _sender: Optional[Sender] = None
     _text: Optional[List[Text]] = None
 
-    def __init__(self, message: str) -> None:
-        self.js = json.loads(message)
+    def __init__(self, message: Union[str, Any]) -> None:
+        if isinstance(message, str):
+            self.js = json.loads(message)
+        else:
+            self.js = message
 
     def __getitem__(self, key: str) -> Any:
         return self.js[key]
@@ -33,7 +36,7 @@ class Context:
         return self._sender
 
     @property
-    def messageChain(self) -> List[Text]:
+    def messageChain(self) -> MessageChain:
         if self._text is None:
             self._text = [Text(js) for js in self.js['messageChain']]
         return self._text
@@ -144,13 +147,18 @@ class PlainText(Text):
 
 
 class ImageText(Text):
-    def __init__(self, path: str) -> None:
+    def __init__(
+        self,
+        path: Optional[str] = None,
+        url: Optional[str] = None,
+    ) -> None:
         """
         :path: Need to be a relative path
         """
         super().__init__({
             "type": "Image",
             "path": path,
+            "url": url,
         })
 
 
