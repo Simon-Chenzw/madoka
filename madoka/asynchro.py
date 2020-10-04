@@ -17,13 +17,11 @@ class asyncUnit(BotBase):
         return self
 
     def addAsyncTask(self, task: Coroutine) -> None:
-        logger.debug(f"add asynchronous task: {task.__name__}")
         self._asyncTaskQueue.put_nowait(task)
 
     async def _asyncTask(self):
         logger.info("waiting for asynchronous task")
         while True:
             task = await self._asyncTaskQueue.get()
-            logger.info(f"asynchronous task execute: {task.__name__}")
+            logger.info(f"asynchronous task: {task.__name__}")
             await task
-            logger.info(f"asynchronous task done: {task.__name__}")
