@@ -95,7 +95,7 @@ def isGroup(
 
 def isGroupAdmin(includeOwner: bool = True, fromGroup: bool = True) -> Censor:
     if includeOwner:
-        lst = ['OWENER', 'ADMINISTRATOR']
+        lst = ['OWNER', 'ADMINISTRATOR']
     else:
         lst = ['ADMINISTRATOR']
 
