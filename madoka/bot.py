@@ -7,12 +7,13 @@ from .register import getRegister, getScheduleRegistered
 from .receive import ReceiveUnit
 from .send import SendUnit
 from .schedule import ScheduleUnit
+from .asynchro import asyncUnit
 from .get import getUnit
 
 logger = logging.getLogger(__name__)
 
 
-class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, getUnit):
+class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, asyncUnit, getUnit):
     def __init__(
         self,
         qid: int,
@@ -61,6 +62,7 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, getUnit):
                 self._receiver(bot=self),
                 self._sender(),
                 self._schedule(bot=self),
+                self._asyncTask(),
             ))
         # It seem needn't to run this, because bot only exited by exceptions
         # self.loop.run_until_complete(self.loop.shutdown_asyncgens())
