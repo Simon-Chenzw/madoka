@@ -33,7 +33,7 @@ class BotBase:
         try:
             self._releaseSession()
         except Exception as err:
-            logger.warn(f"cannot release session because of {err}")
+            logger.warning(f"cannot release session because of {err}")
         return False
 
     def _auth(self) -> None:
@@ -45,7 +45,7 @@ class BotBase:
             },
         ).json()
         if res['code']:
-            logger.error(f"auth error: code={res['code']}")
+            logger.critical(f"auth error: code={res['code']}")
             raise Exception("error during auth")
         self.session = res['session']
 
@@ -58,7 +58,7 @@ class BotBase:
             },
         ).json()
         if res['code']:
-            logger.error(f"verify error: code={res['code']}")
+            logger.critical(f"verify error: code={res['code']}")
             raise Exception("error during verify")
 
     def _releaseSession(self) -> None:
@@ -70,7 +70,7 @@ class BotBase:
             },
         ).json()
         if res['code']:
-            logger.error(f"release error: code={res['code']}")
+            logger.critical(f"release error: code={res['code']}")
             raise Exception("error during release")
         else:
             logger.info(f"Successful release")

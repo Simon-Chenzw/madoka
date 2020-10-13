@@ -29,8 +29,12 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, AsyncUnit, getUnit):
         self.autoRegister = autoRegister
 
     def __enter__(self) -> 'QQbot':
-        logger.info(f"bot start: QQ={self.qid}")
-        super().__enter__()
+        # TODO when initialization failed, bot shouldn't continue running.
+        try:
+            logger.info(f"bot start: QQ={self.qid}")
+            super().__enter__()
+        except:
+            logger.critical("Bot initialization failed")
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> bool:
@@ -39,7 +43,7 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, AsyncUnit, getUnit):
             logger.info("exit because of KeyboardInterrupt")
             return True
         elif exc_type:
-            logger.error(f"QQbot crashed: qid={self.qid}")
+            logger.critical(f"QQbot crashed: qid={self.qid}")
         else:
             logger.info(f"QQbot exit: qid={self.qid}")
         return catch
@@ -56,7 +60,7 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, AsyncUnit, getUnit):
                 self.addTimeTask(task)
 
         # event loop
-        logger.info("start event loop")
+        logger.info("bot start working")
         self.loop.run_until_complete(
             asyncio.gather(
                 self._receiver(bot=self),

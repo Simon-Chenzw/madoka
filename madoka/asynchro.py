@@ -28,6 +28,6 @@ class AsyncUnit(BotBase):
             try:
                 await task
             except Exception as err:
-                logger.warn(f"{task.__name__} {err.__class__.__name__}: {err}")
+                logger.exception(f"asynchro module: {task.__name__}")
             finally:
                 self._asyncTaskQueue.task_done()

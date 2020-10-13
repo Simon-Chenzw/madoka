@@ -112,7 +112,7 @@ class ScheduleUnit(BotBase):
         return self
 
     def addTimeTask(self, task: TimeTask):
-        logger.info(f"add timeTask: {task.func.__name__}")
+        logger.debug(f"add timeTask: {task.func.__name__}")
         self._timeQueue.put_nowait((task.timestamp, task))
 
     async def _schedule(self, bot: 'QQbot') -> None:
@@ -126,9 +126,7 @@ class ScheduleUnit(BotBase):
                 try:
                     task.func(bot)
                 except Exception as err:
-                    logger.warn(
-                        f"{task.func.__name__}: '{err.__class__.__name__}' {err}"
-                    )
+                    logger.exception(f"schedule module: {task.func.__name__}")
                 if task.interval:
                     task.next()
                     self._timeQueue.put_nowait((task.timestamp, task))

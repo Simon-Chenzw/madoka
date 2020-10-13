@@ -11,6 +11,7 @@ from .data import Context
 logger = logging.getLogger(__name__)
 
 
+# TODO merge into send
 class getUnit(BotBase):
     def messageFromId(self, id: int) -> Optional[Context]:
         try:
@@ -22,6 +23,7 @@ class getUnit(BotBase):
                 },
             ).json()
         except Exception as err:
+            logger.exception(f"")
             logger.warn(f"messageFromId crashed: {err}")
             return None
         else:

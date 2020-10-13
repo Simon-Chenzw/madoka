@@ -29,7 +29,7 @@ class ReceiveUnit(BotBase):
         self,
         func: Callable[['QQbot', Context], None],
     ) -> None:
-        logger.info(f"add function: {func.__name__ }")
+        logger.debug(f"add function: {func.__name__ }")
         self.plugin.append(func)
 
     async def _receiver(self, bot: 'QQbot') -> None:
@@ -42,7 +42,7 @@ class ReceiveUnit(BotBase):
 
     async def _solve(self, bot: 'QQbot', message: Union[str, bytes]) -> None:
         if isinstance(message, bytes):
-            logger.warn(f"get byte message {message}")
+            logger.error(f"get byte message {message}")
             return
         # TODO: low performance. should use 'run_in_executor'
         logger.debug(f"get: {message}")
@@ -50,8 +50,7 @@ class ReceiveUnit(BotBase):
             try:
                 func(bot, Context(message))
             except Exception as err:
-                logger.warn(
-                    f"{func.__name__}: '{err.__class__.__name__}' {err} \n{message}"
-                )
+                logger.exception(
+                    f"receive module: {func.__name__}\n {message}")
 
     # TODO event
