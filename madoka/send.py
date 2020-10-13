@@ -1,11 +1,11 @@
 from __future__ import absolute_import
 
-import asyncio
 import logging
-from typing import Any, Coroutine, Union
+from typing import Any, Union, Callable, Optional
 
 import aiohttp
 
+from .asynchro import AsyncUnit
 from .base import BotBase
 from .data import (FriendSender, GroupSender, MessageChain, PlainText, Sender,
                    TempSender, Text)
@@ -13,43 +13,37 @@ from .data import (FriendSender, GroupSender, MessageChain, PlainText, Sender,
 logger = logging.getLogger(__name__)
 
 
-class SendUnit(BotBase):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-
-    def __enter__(self) -> 'SendUnit':
-        super().__enter__()
-        self._sendQueue: 'asyncio.Queue[Coroutine[Any, Any,int]]' = asyncio.Queue(
-            loop=self.loop)
-        return self
-
-    def send(self, method: str, data: Any) -> None:
+class SendUnit(AsyncUnit, BotBase):
+    def send(
+        self,
+        method: str,
+        data: Any,
+        callback: Optional[Callable[[Any], None]] = None,
+    ) -> None:
         """
         auto add sessionKey
         :data: will transform to json
+        :callback: get str response
         """
-        logger.info(f"send call: {method} {data}")
-        self._sendQueue.put_nowait(self._asyncsend(method, data))
+        logger.debug(f"send call: {method} {data}")
+        self.addAsyncTask(self._asyncsend(method, data, callback))
 
-    async def _asyncsend(self, method: str, data: Any) -> int:
+    async def _asyncsend(
+        self,
+        method: str,
+        data: Any,
+        callback: Optional[Callable[[Any], None]] = None,
+    ) -> None:
         data['sessionKey'] = self.session
-        logger.debug(f"send: {method} {data}")
+        logger.info(f"{method}: {data}")
         async with aiohttp.ClientSession() as session:
             async with session.post(
                     f"http://{self.socket}/{method}",
                     json=data,
             ) as res:
-                js = await res.json()
-                return js['code']
-
-    async def _sender(self) -> None:
-        logger.info(f"waiting for send")
-        while True:
-            task = await self._sendQueue.get()
-            ret = await task
-            if ret:
-                logger.warn(f"send error: code={ret}")
-            self._sendQueue.task_done()
+                text = await res.text()
+                if callback:
+                    callback(text)
 
     # special send method is below
 
