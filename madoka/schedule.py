@@ -133,6 +133,7 @@ class ScheduleUnit(BotBase):
             else:
                 self._timeQueue.put_nowait((timestamp, task))
                 await asyncio.sleep(1)
+            self._timeQueue.task_done()
 
     # special timetask method is below
 
