@@ -1,11 +1,11 @@
 from __future__ import absolute_import
 
+import asyncio
 import logging
-from typing import Any, Union, Callable, Optional
+from typing import Any, Coroutine, Union, Optional, Callable
 
 import aiohttp
 
-from .asynchro import AsyncUnit
 from .base import BotBase
 from .data import (FriendSender, GroupSender, MessageChain, PlainText, Sender,
                    TempSender, Text)
@@ -13,7 +13,13 @@ from .data import (FriendSender, GroupSender, MessageChain, PlainText, Sender,
 logger = logging.getLogger(__name__)
 
 
-class SendUnit(AsyncUnit, BotBase):
+class SendUnit(BotBase):
+    def __enter__(self) -> 'SendUnit':
+        super().__enter__()
+        self._sendQueue: 'asyncio.Queue[Coroutine]' = asyncio.Queue(
+            loop=self.loop)
+        return self
+
     def send(
         self,
         method: str,
@@ -26,7 +32,7 @@ class SendUnit(AsyncUnit, BotBase):
         :callback: get str response
         """
         logger.debug(f"send call: {method} {data}")
-        self.addAsyncTask(self._asyncsend(method, data, callback))
+        self._sendQueue.put_nowait(self._asyncsend(method, data, callback))
 
     async def _asyncsend(
         self,
@@ -41,9 +47,18 @@ class SendUnit(AsyncUnit, BotBase):
                     f"http://{self.socket}/{method}",
                     json=data,
             ) as res:
-                text = await res.text()
-                if callback:
-                    callback(text)
+                js = await res.json()
+                if js['code']:
+                    logger.error(f"send error: code={js['code']}")
+                elif callback:
+                    callback(js)
+
+    async def _sender(self) -> None:
+        logger.info(f"waiting for send")
+        while True:
+            task = await self._sendQueue.get()
+            await task
+            self._sendQueue.task_done()
 
     # special send method is below
 
