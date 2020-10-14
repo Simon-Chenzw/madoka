@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import asyncio
 import logging
-from typing import Any, Callable, Coroutine, Optional, Union
+from typing import Any, Callable, Coroutine, Optional, Union, Literal
 
 import aiohttp
 
@@ -21,33 +21,63 @@ class SendUnit(BotBase):
 
     def send(
         self,
-        method: str,
+        method: Literal["get", "post"],
+        interface: str,
         data: Any,
         callback: Optional[Callable[[Any], None]] = None,
     ) -> None:
         """
         auto add sessionKey
         :data: will transform to json
-        :callback: get str response
+        :callback: get json response
         """
-        logger.debug(f"send call: {method} {data}")
-        self._sendQueue.put_nowait(self._asyncsend(method, data, callback))
+        logger.debug(f"send call: {method} {interface} {data}")
+        if method == "get":
+            self._sendQueue.put_nowait(
+                self._asyncget(interface, data, callback))
+        elif method == "post":
+            self._sendQueue.put_nowait(
+                self._asyncpost(interface, data, callback))
 
-    async def _asyncsend(
+    async def _asyncget(
         self,
-        method: str,
+        interface: str,
         data: Any,
         callback: Optional[Callable[[Any], None]] = None,
     ) -> None:
         data['sessionKey'] = self.session
-        logger.info(f"{method}: {data}")
+        logger.info(f"{interface} [GET]: {data}")
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                    f"http://{self.socket}/{interface}",
+                    params=data,
+            ) as res:
+                js = await res.json()
+                logger.debug(f"{interface} response: {res}")
+                if js['code']:
+                    logger.error(f"send error: code={js['code']}")
+                elif callback:
+                    try:
+                        callback(js)
+                    except Exception as err:
+                        logger.exception(
+                            f"callback {callback.__name__} failed:")
+
+    async def _asyncpost(
+        self,
+        interface: str,
+        data: Any,
+        callback: Optional[Callable[[Any], None]] = None,
+    ) -> None:
+        data['sessionKey'] = self.session
+        logger.info(f"{interface} [POST]: {data}")
         async with aiohttp.ClientSession() as session:
             async with session.post(
-                    f"http://{self.socket}/{method}",
+                    f"http://{self.socket}/{interface}",
                     json=data,
             ) as res:
                 js = await res.json()
-                logger.debug(f"{method}: data={data} res={res}")
+                logger.debug(f"{interface} response: {res}")
                 if js['code']:
                     logger.error(f"send error: code={js['code']}")
                 elif callback:
@@ -109,7 +139,8 @@ class SendUnit(BotBase):
         /sendFriendMessage
         """
         self.send(
-            method='sendFriendMessage',
+            method="post",
+            interface='sendFriendMessage',
             data={
                 "target": target,
                 "messageChain": self._toMessageChain(message),
@@ -125,7 +156,8 @@ class SendUnit(BotBase):
         /sendGroupMessage
         """
         self.send(
-            method='sendGroupMessage',
+            method="post",
+            interface='sendGroupMessage',
             data={
                 "target": target,
                 "messageChain": self._toMessageChain(message),
@@ -142,7 +174,8 @@ class SendUnit(BotBase):
         /sendTempMessage
         """
         self.send(
-            method='sendTempMessage',
+            method="post",
+            interface='sendTempMessage',
             data={
                 "qq": target,
                 "group": group,
@@ -159,7 +192,8 @@ class SendUnit(BotBase):
         /messageFromId
         """
         self.send(
-            method="messageFromId",
+            method="get",
+            interface="messageFromId",
             data={"id": messageId},
             callback=callback,
         )

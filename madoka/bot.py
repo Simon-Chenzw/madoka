@@ -8,12 +8,11 @@ from .receive import ReceiveUnit
 from .send import SendUnit
 from .schedule import ScheduleUnit
 from .asynchro import AsyncUnit
-from .get import getUnit
 
 logger = logging.getLogger(__name__)
 
 
-class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, AsyncUnit, getUnit):
+class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, AsyncUnit):
     def __init__(
         self,
         qid: int,
@@ -64,6 +63,7 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, AsyncUnit, getUnit):
         self.loop.run_until_complete(
             asyncio.gather(
                 self._receiver(bot=self),
+                self._sender(),
                 self._schedule(bot=self),
                 self._asyncTask(),
             ))
