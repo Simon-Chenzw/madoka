@@ -2,13 +2,12 @@ from __future__ import absolute_import
 
 import asyncio
 import logging
-from typing import Any, Coroutine, Union, Optional, Callable
+from typing import Any, Callable, Coroutine, Optional, Union
 
 import aiohttp
 
 from .base import BotBase
-from .data import (FriendSender, GroupSender, MessageChain, PlainText, Sender,
-                   TempSender, Text)
+from .data import FriendSender, GroupSender, MessageChain, PlainText, Sender, TempSender, Text
 
 logger = logging.getLogger(__name__)
 
@@ -48,16 +47,24 @@ class SendUnit(BotBase):
                     json=data,
             ) as res:
                 js = await res.json()
+                logger.debug(f"{method}: data={data} res={res}")
                 if js['code']:
                     logger.error(f"send error: code={js['code']}")
                 elif callback:
-                    callback(js)
+                    try:
+                        callback(js)
+                    except Exception as err:
+                        logger.exception(
+                            f"callback {callback.__name__} failed:")
 
     async def _sender(self) -> None:
         logger.info(f"waiting for send")
         while True:
             task = await self._sendQueue.get()
-            await task
+            try:
+                await task
+            except Exception as err:
+                logger.exception("send failed:")
             self._sendQueue.task_done()
 
     # special send method is below
@@ -141,6 +148,20 @@ class SendUnit(BotBase):
                 "group": group,
                 "messageChain": self._toMessageChain(message),
             },
+        )
+
+    def messageFromId(
+        self,
+        messageId: int,
+        callback: Callable[[Any], None],
+    ) -> None:
+        """
+        /messageFromId
+        """
+        self.send(
+            method="messageFromId",
+            data={"id": messageId},
+            callback=callback,
         )
 
     # TODO more method
