@@ -54,14 +54,10 @@ class SendUnit(BotBase):
             ) as res:
                 js = await res.json()
                 logger.debug(f"{interface} response: {res}")
-                if js['code']:
-                    logger.error(f"send error: code={js['code']}")
-                elif callback:
-                    try:
-                        callback(js)
-                    except Exception as err:
-                        logger.exception(
-                            f"callback {callback.__name__} failed:")
+                try:
+                    if callback: callback(js)
+                except Exception as err:
+                    logger.exception(f"callback {callback.__name__} failed:")
 
     async def _asyncpost(
         self,
@@ -78,14 +74,10 @@ class SendUnit(BotBase):
             ) as res:
                 js = await res.json()
                 logger.debug(f"{interface} response: {res}")
-                if js['code']:
-                    logger.error(f"send error: code={js['code']}")
-                elif callback:
-                    try:
-                        callback(js)
-                    except Exception as err:
-                        logger.exception(
-                            f"callback {callback.__name__} failed:")
+                try:
+                    if callback: callback(js)
+                except Exception as err:
+                    logger.exception(f"callback {callback.__name__} failed:")
 
     async def _sender(self) -> None:
         logger.info(f"waiting for send")
