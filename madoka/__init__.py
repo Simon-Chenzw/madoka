@@ -21,6 +21,8 @@ from .filter import (
     isGroupOwner,
     isPerson,
     isTempMessage,
+    hasType,
+    isAt,
 )
 from .register import (
     register,

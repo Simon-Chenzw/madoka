@@ -118,3 +118,18 @@ def isGroupOwner(fromGroup: bool = True) -> Censor:
         return False
 
     return Censor(check)
+
+
+def hasType(type: str) -> Censor:
+    def check(context: Context) -> bool:
+        return any(message.type == type for message in context.messageChain)
+
+    return Censor(check)
+
+
+def isAt(target: int) -> Censor:
+    def check(context: Context) -> bool:
+        return any(message.type == "At" and message['target'] == target
+                   for message in context.messageChain)
+
+    return Censor(check)
