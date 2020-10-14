@@ -115,7 +115,7 @@ class ScheduleUnit(BotBase):
         logger.debug(f"add timeTask: {task.func.__name__}")
         self._timeQueue.put_nowait((task.timestamp, task))
 
-    async def _schedule(self, bot: 'QQbot') -> None:
+    async def _schedule(self) -> None:
         logger.info(f"schedule online")
         while True:
             # TODO: low performance.
@@ -124,7 +124,7 @@ class ScheduleUnit(BotBase):
                 # TODO: low performance. should use 'run_in_executor'
                 logger.info(f"TimeTask: {task.func.__name__}")
                 try:
-                    task.func(bot)
+                    task.func(self._bot)
                 except Exception as err:
                     logger.exception(f"schedule module: {task.func.__name__}")
                 if task.interval:

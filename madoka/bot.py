@@ -24,6 +24,7 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, AsyncUnit):
             qid=qid,
             socket=socket,
             authKey=authKey,
+            bot=self,
         )
         self.autoRegister = autoRegister
 
@@ -62,9 +63,9 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, AsyncUnit):
         logger.info("bot start working")
         self.loop.run_until_complete(
             asyncio.gather(
-                self._receiver(bot=self),
+                self._receiver(),
                 self._sender(),
-                self._schedule(bot=self),
+                self._schedule(),
                 self._asyncTask(),
             ))
         # It seem needn't to run this, because bot only exited by exceptions

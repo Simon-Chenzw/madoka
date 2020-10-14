@@ -2,8 +2,12 @@ from __future__ import absolute_import
 
 import asyncio
 import logging
+from typing import TYPE_CHECKING
 
 import requests
+
+if TYPE_CHECKING:
+    from .bot import QQbot
 
 logger = logging.getLogger(__name__)
 
@@ -14,12 +18,14 @@ class BotBase:
         qid: int,
         socket: str,
         authKey: str,
-        adminQQ: int = 0,
+        bot: 'QQbot',
     ) -> None:
         super().__init__()
         self.qid = qid
         self.socket = socket
         self.authKey = authKey
+        # self._bot just use for typing hinting
+        self._bot = bot
 
     def __enter__(self) -> 'BotBase':
         self._auth()

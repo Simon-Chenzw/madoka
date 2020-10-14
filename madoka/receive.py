@@ -32,15 +32,15 @@ class ReceiveUnit(BotBase):
         logger.debug(f"add function: {func.__name__ }")
         self.plugin.append(func)
 
-    async def _receiver(self, bot: 'QQbot') -> None:
+    async def _receiver(self) -> None:
         logger.info(f"connect with ws://{self.socket}/message?...")
         async with websockets.connect(
                 f"ws://{self.socket}/message?sessionKey={self.session}"
         ) as websocket:
             async for message in websocket:
-                asyncio.create_task(self._solve(bot, message))
+                asyncio.create_task(self._solve(message))
 
-    async def _solve(self, bot: 'QQbot', message: Union[str, bytes]) -> None:
+    async def _solve(self, message: Union[str, bytes]) -> None:
         if isinstance(message, bytes):
             logger.error(f"get byte message {message}")
             return
@@ -48,7 +48,7 @@ class ReceiveUnit(BotBase):
         logger.debug(f"get: {message}")
         for func in self.plugin:
             try:
-                func(bot, Context(message))
+                func(self._bot, Context(message))
             except Exception as err:
                 logger.exception(
                     f"receive module: {func.__name__}\n {message}")
