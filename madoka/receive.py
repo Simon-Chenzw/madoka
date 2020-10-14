@@ -16,14 +16,9 @@ logger = logging.getLogger(__name__)
 
 
 class ReceiveUnit(BotBase):
-    plugin: List[Callable[['QQbot', Context], None]] = []
-
     def __init__(self, *args, **kwargs) -> None:
+        self.plugin: List[Callable[['QQbot', Context], None]] = []
         super().__init__(*args, **kwargs)
-
-    def __enter__(self) -> 'ReceiveUnit':
-        super().__enter__()
-        return self
 
     def addFunction(
         self,

@@ -102,9 +102,6 @@ class TimeTask:
 
 
 class ScheduleUnit(BotBase):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-
     def __enter__(self) -> 'ScheduleUnit':
         super().__enter__()
         self._timeQueue: 'asyncio.PriorityQueue[Tuple[float,TimeTask]]' = asyncio.PriorityQueue(
