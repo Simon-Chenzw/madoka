@@ -2,12 +2,13 @@ from __future__ import absolute_import
 
 import asyncio
 import logging
-from typing import Any, Callable, Coroutine, Optional, Union, Literal
+from typing import Any, Callable, Coroutine, Literal, Optional, Union
 
 import aiohttp
 
 from .base import BotBase
-from .data import FriendSender, GroupSender, MessageChain, PlainText, Sender, TempSender, Text
+from .data import (Context, FriendSender, GroupSender, MessageChain, PlainText,
+                   Sender, TempSender, Text)
 
 logger = logging.getLogger(__name__)
 
@@ -104,56 +105,77 @@ class SendUnit(BotBase):
         self,
         sender: Sender,
         message: Union[str, Text, MessageChain],
+        quoteId: Optional[int] = None,
     ) -> None:
         if isinstance(sender, FriendSender):
             self.sendFriendMessage(
                 target=sender.id,
                 message=message,
+                quote=quoteId,
             )
         elif isinstance(sender, GroupSender):
             self.sendGroupMessage(
                 target=sender.groupId,
                 message=message,
+                quote=quoteId,
             )
         elif isinstance(sender, TempSender):
             self.sendTempMessage(
                 target=sender.id,
                 group=sender.groupId,
                 message=message,
+                quote=quoteId,
             )
+
+    def quote(
+        self,
+        context: Context,
+        message: Union[str, Text, MessageChain],
+    ) -> None:
+        self.reply(
+            sender=context.sender,
+            message=message,
+            quoteId=context.messageId,
+        )
 
     def sendFriendMessage(
         self,
         target: int,
         message: Union[str, Text, MessageChain],
+        quote: Optional[int] = None,
     ) -> None:
         """
         /sendFriendMessage
         """
+        data = {
+            "target": target,
+            "messageChain": self._toMessageChain(message),
+        }
+        if quote: data['quote'] = quote
         self.send(
             method="post",
             interface='sendFriendMessage',
-            data={
-                "target": target,
-                "messageChain": self._toMessageChain(message),
-            },
+            data=data,
         )
 
     def sendGroupMessage(
         self,
         target: int,
         message: Union[str, Text, MessageChain],
+        quote: Optional[int] = None,
     ) -> None:
         """
         /sendGroupMessage
         """
+        data = {
+            "target": target,
+            "messageChain": self._toMessageChain(message),
+        }
+        if quote: data['quote'] = quote
         self.send(
             method="post",
             interface='sendGroupMessage',
-            data={
-                "target": target,
-                "messageChain": self._toMessageChain(message),
-            },
+            data=data,
         )
 
     def sendTempMessage(
@@ -161,18 +183,21 @@ class SendUnit(BotBase):
         target: int,
         group: int,
         message: Union[str, Text, MessageChain],
+        quote: Optional[int] = None,
     ) -> None:
         """
         /sendTempMessage
         """
+        data = {
+            "qq": target,
+            "group": group,
+            "messageChain": self._toMessageChain(message),
+        }
+        if quote: data['quote'] = quote
         self.send(
             method="post",
             interface='sendTempMessage',
-            data={
-                "qq": target,
-                "group": group,
-                "messageChain": self._toMessageChain(message),
-            },
+            data=data,
         )
 
     def messageFromId(

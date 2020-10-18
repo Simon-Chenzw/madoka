@@ -41,6 +41,10 @@ class Context:
             self._text = [Text(js) for js in self.js['messageChain']]
         return self._text
 
+    @property
+    def messageId(self) -> int:
+        return self.js['messageChain'][0]['id']
+
 
 class FriendSender:
     def __init__(self, js: Any) -> None:
