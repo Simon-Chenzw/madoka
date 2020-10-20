@@ -166,4 +166,18 @@ class ImageText(Text):
         })
 
 
+class Event:
+    def __init__(self, message: Union[str, Any]) -> None:
+        if isinstance(message, str):
+            self.js = json.loads(message)
+        else:
+            self.js = message
+
+    def __getitem__(self, key: str) -> Any:
+        return self.js[key]
+
+    @property
+    def type(self) -> str:
+        return self.js['type']
+
 # TODO more Text and event

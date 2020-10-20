@@ -10,6 +10,7 @@ from .data import (
     Text,
     PlainText,
     ImageText,
+    Event,
 )
 from .filter import (
     Censor,
