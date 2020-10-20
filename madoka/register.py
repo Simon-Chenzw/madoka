@@ -1,15 +1,16 @@
 from __future__ import absolute_import, annotations
 
 import logging
-from typing import TYPE_CHECKING, Callable, List
+from typing import TYPE_CHECKING, Callable, List, Tuple
 
+from .data import Context, Event
 from .schedule import TimeTask
-from .data import Context
 
 if TYPE_CHECKING:
     from .bot import QQbot
 
 registered: List[Callable[[QQbot, Context], None]] = []
+eventRegistered: List[Tuple[str, Callable[[QQbot, Event], None]]] = []
 scheduleRegistered: List[TimeTask] = []
 
 logger = logging.getLogger(__name__)
@@ -17,6 +18,10 @@ logger = logging.getLogger(__name__)
 
 def getRegister() -> List[Callable[[QQbot, Context], None]]:
     return registered
+
+
+def getEventRegistered() -> List[Tuple[str, Callable[[QQbot, Event], None]]]:
+    return eventRegistered
 
 
 def getScheduleRegistered() -> List[TimeTask]:
@@ -28,6 +33,16 @@ def register(
                    None]) -> Callable[[QQbot, Context], None]:
     registered.append(func)
     return func
+
+
+def eventRegister(type: str):
+    def inner(
+        func: Callable[[QQbot, Event],
+                       None]) -> Callable[[QQbot, Event], None]:
+        eventRegistered.append((type, func))
+        return func
+
+    return inner
 
 
 def runOnce(

@@ -27,6 +27,7 @@ from .filter import (
 )
 from .register import (
     register,
+    eventRegister,
     runEveryDay,
     runEveryWeek,
     runOnce,

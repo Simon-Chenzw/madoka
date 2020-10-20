@@ -3,7 +3,7 @@ from __future__ import absolute_import
 import asyncio
 import logging
 
-from .register import getRegister, getScheduleRegistered
+from .register import getRegister, getEventRegistered, getScheduleRegistered
 from .receive import ReceiveUnit
 from .send import SendUnit
 from .schedule import ScheduleUnit
@@ -56,6 +56,8 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, AsyncUnit):
         if self.autoRegister:
             for func in getRegister():
                 self.addFunction(func)
+            for type, func in getEventRegistered():
+                self.addEvent(type, func)
             for task in getScheduleRegistered():
                 self.addTimeTask(task)
 
