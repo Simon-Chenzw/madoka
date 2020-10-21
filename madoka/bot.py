@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import asyncio
 import logging
+from typing import Optional
 
 from websockets import ConnectionClosedError
 
@@ -21,11 +22,13 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, AsyncUnit):
         socket: str,
         authKey: str,
         autoRegister: bool = True,
+        waitMirai: Optional[int] = None,
     ) -> None:
         super().__init__(
             qid=qid,
             socket=socket,
             authKey=authKey,
+            waitMirai=waitMirai,
             bot=self,
         )
         self._autoRegister = autoRegister

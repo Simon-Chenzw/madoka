@@ -2,7 +2,8 @@ from __future__ import absolute_import
 
 import asyncio
 import logging
-from typing import TYPE_CHECKING
+import time
+from typing import TYPE_CHECKING, Optional
 
 import requests
 
@@ -19,17 +20,22 @@ class BotBase:
         socket: str,
         authKey: str,
         bot: 'QQbot',
+        waitMirai: Optional[int] = None,
     ) -> None:
         super().__init__()
         self.qid = qid
         self._socket = socket
         self._authKey = authKey
+        self._waitMirai = waitMirai
         # self._bot just use for typing hinting
         self._bot = bot
 
     def __enter__(self) -> 'BotBase':
+        if isinstance(self._waitMirai, int):
+            self._wait()
         self._auth()
         self._verify()
+        self._setConfig()
         logger.info(f"successfully authenticate: session={self._session}")
         logger.debug("get event loop")
         self._loop = asyncio.get_event_loop()
@@ -41,6 +47,20 @@ class BotBase:
         except Exception as err:
             logger.warning(f"cannot release session")
         return False
+
+    def _wait(self) -> None:
+        cnt = 0
+        while not (cnt and cnt == self._waitMirai):
+            try:
+                cnt += 1
+                res = requests.get(f"http://{self._socket}/about").json()
+            except:
+                logger.info(f"get api information failed: {cnt} times")
+                time.sleep(3)
+            else:
+                logger.info(f"api version: {res['data']['version']}")
+                time.sleep(1)
+                return
 
     def _auth(self) -> None:
         # TODO: retry several times
@@ -66,6 +86,19 @@ class BotBase:
         if res['code']:
             logger.critical(f"verify error: code={res['code']}")
             raise Exception("error during verify")
+
+    def _setConfig(self) -> None:
+        res = requests.post(
+            f"http://{self._socket}/config",
+            json={
+                "sessionKey": self._session,
+                "cacheSize": 4096,
+                "enableWebsocket": True,
+            },
+        ).json()
+        if res['code']:
+            logger.critical(f"set config error: code={res['code']}")
+            raise Exception("error during set config")
 
     def _releaseSession(self) -> None:
         res = requests.post(
