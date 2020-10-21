@@ -28,7 +28,7 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, AsyncUnit):
             authKey=authKey,
             bot=self,
         )
-        self.autoRegister = autoRegister
+        self._autoRegister = autoRegister
 
     def __enter__(self) -> 'QQbot':
         # TODO when initialization failed, bot shouldn't continue running.
@@ -55,7 +55,7 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, AsyncUnit):
         start working
         """
 
-        if self.autoRegister:
+        if self._autoRegister:
             for func in getRegister():
                 self.addFunction(func)
             for type, func in getEventRegistered():
@@ -64,9 +64,9 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, AsyncUnit):
                 self.addTimeTask(task)
 
         # event loop
-        self.loop.run_until_complete(self._main())
-        self.loop.run_until_complete(self.loop.shutdown_asyncgens())
-        self.loop.close()
+        self._loop.run_until_complete(self._main())
+        self._loop.run_until_complete(self._loop.shutdown_asyncgens())
+        self._loop.close()
 
     async def _main(self):
         def cancel():

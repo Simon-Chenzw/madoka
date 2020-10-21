@@ -22,17 +22,17 @@ class BotBase:
     ) -> None:
         super().__init__()
         self.qid = qid
-        self.socket = socket
-        self.authKey = authKey
+        self._socket = socket
+        self._authKey = authKey
         # self._bot just use for typing hinting
         self._bot = bot
 
     def __enter__(self) -> 'BotBase':
         self._auth()
         self._verify()
-        logger.info(f"successfully authenticate: session={self.session}")
+        logger.info(f"successfully authenticate: session={self._session}")
         logger.debug("get event loop")
-        self.loop = asyncio.get_event_loop()
+        self._loop = asyncio.get_event_loop()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> bool:
@@ -45,21 +45,21 @@ class BotBase:
     def _auth(self) -> None:
         # TODO: retry several times
         res = requests.post(
-            url=f"http://{self.socket}/auth",
+            url=f"http://{self._socket}/auth",
             json={
-                "authKey": self.authKey
+                "authKey": self._authKey
             },
         ).json()
         if res['code']:
             logger.critical(f"auth error: code={res['code']}")
             raise Exception("error during auth")
-        self.session = res['session']
+        self._session = res['session']
 
     def _verify(self) -> None:
         res = requests.post(
-            url=f"http://{self.socket}/verify",
+            url=f"http://{self._socket}/verify",
             json={
-                "sessionKey": self.session,
+                "sessionKey": self._session,
                 "qq": self.qid,
             },
         ).json()
@@ -69,9 +69,9 @@ class BotBase:
 
     def _releaseSession(self) -> None:
         res = requests.post(
-            url=f"http://{self.socket}/release",
+            url=f"http://{self._socket}/release",
             json={
-                "sessionKey": self.session,
+                "sessionKey": self._session,
                 "qq": self.qid,
             },
         ).json()

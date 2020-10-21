@@ -13,7 +13,7 @@ class AsyncUnit(BotBase):
     def __enter__(self) -> 'AsyncUnit':
         super().__enter__()
         self._asyncTaskQueue: 'asyncio.Queue[Coroutine]' = asyncio.Queue(
-            loop=self.loop)
+            loop=self._loop)
         return self
 
     def addAsyncTask(self, task: Coroutine) -> None:

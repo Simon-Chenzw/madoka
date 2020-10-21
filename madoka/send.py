@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import asyncio
 import logging
-from typing import Any, Callable, Coroutine, Literal, Optional, Union
+from typing import Any, Callable, Coroutine, Dict, Literal, Optional, Union
 
 import aiohttp
 
@@ -17,15 +17,15 @@ class SendUnit(BotBase):
     def __enter__(self) -> 'SendUnit':
         super().__enter__()
         self._sendQueue: 'asyncio.Queue[Coroutine]' = asyncio.Queue(
-            loop=self.loop)
+            loop=self._loop)
         return self
 
     def send(
         self,
         method: Literal["get", "post"],
         interface: str,
-        data: Any,
-        callback: Optional[Callable[[Any], None]] = None,
+        data: Dict[str, Any],
+        callback: Optional[Callable[[Dict[str, Any]], None]] = None,
     ) -> None:
         """
         auto add sessionKey
@@ -33,6 +33,7 @@ class SendUnit(BotBase):
         :callback: get json response
         """
         logger.debug(f"send call: {method} {interface} {data}")
+        data['sessionKey'] = self._session
         if method == "get":
             self._sendQueue.put_nowait(
                 self._asyncget(interface, data, callback))
@@ -43,14 +44,13 @@ class SendUnit(BotBase):
     async def _asyncget(
         self,
         interface: str,
-        data: Any,
-        callback: Optional[Callable[[Any], None]] = None,
+        data: Dict[str, Any],
+        callback: Optional[Callable[[Dict[str, Any]], None]] = None,
     ) -> None:
-        data['sessionKey'] = self.session
         logger.info(f"{interface} [GET]: {data}")
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                    f"http://{self.socket}/{interface}",
+                    f"http://{self._socket}/{interface}",
                     params=data,
             ) as res:
                 js = await res.json()
@@ -63,14 +63,13 @@ class SendUnit(BotBase):
     async def _asyncpost(
         self,
         interface: str,
-        data: Any,
-        callback: Optional[Callable[[Any], None]] = None,
+        data: Dict[str, Any],
+        callback: Optional[Callable[[Dict[str, Any]], None]] = None,
     ) -> None:
-        data['sessionKey'] = self.session
         logger.info(f"{interface} [POST]: {data}")
         async with aiohttp.ClientSession() as session:
             async with session.post(
-                    f"http://{self.socket}/{interface}",
+                    f"http://{self._socket}/{interface}",
                     json=data,
             ) as res:
                 js = await res.json()
@@ -203,7 +202,7 @@ class SendUnit(BotBase):
     def messageFromId(
         self,
         messageId: int,
-        callback: Callable[[Any], None],
+        callback: Callable[[Dict[str, Any]], None],
     ) -> None:
         """
         /messageFromId

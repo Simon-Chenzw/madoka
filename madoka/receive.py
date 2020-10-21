@@ -30,7 +30,7 @@ class MessageUnit(BotBase):
     async def _messageReceiver(self) -> None:
         logger.info("listening message")
         async with websockets.connect(
-                f"ws://{self.socket}/message?sessionKey={self.session}"
+                f"ws://{self._socket}/message?sessionKey={self._session}"
         ) as websocket:
             async for message in websocket:
                 asyncio.create_task(self._messageSolve(message))
@@ -65,7 +65,7 @@ class EventUnit(BotBase):
     async def _eventReceiver(self) -> None:
         logger.info("listening event")
         async with websockets.connect(
-                f"ws://{self.socket}/event?sessionKey={self.session}"
+                f"ws://{self._socket}/event?sessionKey={self._session}"
         ) as websocket:
             async for message in websocket:
                 asyncio.create_task(self._eventSolve(message))
