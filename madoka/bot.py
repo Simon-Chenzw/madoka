@@ -29,6 +29,7 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, AsyncUnit):
             bot=self,
         )
         self._autoRegister = autoRegister
+        self._hasError = False
 
     def __enter__(self) -> 'QQbot':
         # TODO when initialization failed, bot shouldn't continue running.
@@ -37,9 +38,13 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, AsyncUnit):
             super().__enter__()
         except:
             logger.critical("Bot initialization failed")
+            self._hasError = True
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> bool:
+        if self._hasError:
+            logger.debug("bot has error, skip release")
+            return True
         catch = super().__exit__(exc_type, exc_value, traceback)
         if exc_type is KeyboardInterrupt:
             logger.info("exit because of KeyboardInterrupt")
@@ -54,6 +59,9 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, AsyncUnit):
         """
         start working
         """
+        if self._hasError:
+            logger.error("bot has error, skip running")
+            return
 
         if self._autoRegister:
             for func in getRegister():
