@@ -63,7 +63,6 @@ class BotBase:
                 return
 
     def _auth(self) -> None:
-        # TODO: retry several times
         res = requests.post(
             url=f"http://{self._socket}/auth",
             json={

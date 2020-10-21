@@ -35,7 +35,6 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, AsyncUnit):
         self._hasError = False
 
     def __enter__(self) -> 'QQbot':
-        # TODO when initialization failed, bot shouldn't continue running.
         try:
             logger.info(f"bot start: QQ={self.qid}")
             super().__enter__()
