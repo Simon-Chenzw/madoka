@@ -3,6 +3,8 @@ from __future__ import absolute_import
 import asyncio
 import logging
 
+from websockets import ConnectionClosedError
+
 from .register import getRegister, getEventRegistered, getScheduleRegistered
 from .receive import ReceiveUnit
 from .send import SendUnit
@@ -62,14 +64,28 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, AsyncUnit):
                 self.addTimeTask(task)
 
         # event loop
+        self.loop.run_until_complete(self._main())
+        self.loop.run_until_complete(self.loop.shutdown_asyncgens())
+        self.loop.close()
+
+    async def _main(self):
+        def cancel():
+            for t in tasks:
+                t.cancel()
+
         logger.info("bot start working")
-        self.loop.run_until_complete(
-            asyncio.gather(
+        tasks = list(
+            map(asyncio.ensure_future, [
                 self._receiver(),
                 self._sender(),
                 self._schedule(),
                 self._asyncTask(),
-            ))
-        # It seem needn't to run this, because bot only exited by exceptions
-        # self.loop.run_until_complete(self.loop.shutdown_asyncgens())
-        # self.loop.close()
+            ]))
+        try:
+            await asyncio.gather(*tasks)
+        except ConnectionClosedError:
+            logger.error(f"websockets connection closed")
+            cancel()
+        except Exception as err:
+            logger.exception(f"{err.__class__.__name__}':")
+            cancel()

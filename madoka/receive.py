@@ -91,5 +91,7 @@ class EventUnit(BotBase):
 
 class ReceiveUnit(MessageUnit, EventUnit):
     async def _receiver(self) -> None:
-        asyncio.create_task(self._messageReceiver())
-        asyncio.create_task(self._eventReceiver())
+        await asyncio.gather(
+            self._messageReceiver(),
+            self._eventReceiver(),
+        )
