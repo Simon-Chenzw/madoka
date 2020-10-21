@@ -39,7 +39,7 @@ class BotBase:
         try:
             self._releaseSession()
         except Exception as err:
-            logger.warning(f"cannot release session because of {err}")
+            logger.warning(f"cannot release session")
         return False
 
     def _auth(self) -> None:
