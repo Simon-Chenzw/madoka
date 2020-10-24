@@ -127,7 +127,7 @@ class ScheduleUnit(BotBase):
         return self
 
     def addTimeTask(self, task: TimeTask):
-        logger.debug(f"add timeTask: {task.func.__name__}")
+        logger.debug(f"add timeTask: {task.func.__name__} {task.timestamp}")
         self._timeQueue.put_nowait(task)
 
     async def _schedule(self) -> None:
@@ -144,7 +144,7 @@ class ScheduleUnit(BotBase):
                     logger.exception(f"schedule module: {task.func.__name__}")
                 if task.interval:
                     task.next()
-                    self._timeQueue.put_nowait(task)
+                    self.addTimeTask(task)
             else:
                 self._timeQueue.put_nowait(task)
                 await asyncio.sleep(1)
