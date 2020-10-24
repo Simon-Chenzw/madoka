@@ -38,6 +38,24 @@ class TimeTask:
         else:
             return None
 
+    def __lt__(self, rhs) -> bool:
+        return self.timestamp < rhs.timestamp
+
+    def __gt__(self, rhs) -> bool:
+        return self.timestamp > rhs.timestamp
+
+    def __le__(self, rhs) -> bool:
+        return self.timestamp <= rhs.timestamp
+
+    def __ge__(self, rhs) -> bool:
+        return self.timestamp >= rhs.timestamp
+
+    def __eq__(self, rhs) -> bool:
+        return self.timestamp == rhs.timestamp
+
+    def __ne__(self, rhs) -> bool:
+        return self.timestamp != rhs.timestamp
+
     @staticmethod
     def runOnce(func: Callable[['QQbot'], None], delay: int = 0) -> 'TimeTask':
         today = datetime.today()
@@ -104,20 +122,20 @@ class TimeTask:
 class ScheduleUnit(BotBase):
     def __enter__(self) -> 'ScheduleUnit':
         super().__enter__()
-        self._timeQueue: 'asyncio.PriorityQueue[Tuple[float,TimeTask]]' = asyncio.PriorityQueue(
+        self._timeQueue: 'asyncio.PriorityQueue[TimeTask]' = asyncio.PriorityQueue(
             loop=self._loop)
         return self
 
     def addTimeTask(self, task: TimeTask):
         logger.debug(f"add timeTask: {task.func.__name__}")
-        self._timeQueue.put_nowait((task.timestamp, task))
+        self._timeQueue.put_nowait(task)
 
     async def _schedule(self) -> None:
         logger.info(f"schedule online")
         while True:
             # TODO: low performance.
-            timestamp, task = await self._timeQueue.get()
-            if timestamp <= time.time():
+            task = await self._timeQueue.get()
+            if task.timestamp <= time.time():
                 # TODO: low performance. should use 'run_in_executor'
                 logger.info(f"TimeTask: {task.func.__name__}")
                 try:
@@ -126,9 +144,9 @@ class ScheduleUnit(BotBase):
                     logger.exception(f"schedule module: {task.func.__name__}")
                 if task.interval:
                     task.next()
-                    self._timeQueue.put_nowait((task.timestamp, task))
+                    self._timeQueue.put_nowait(task)
             else:
-                self._timeQueue.put_nowait((timestamp, task))
+                self._timeQueue.put_nowait(task)
                 await asyncio.sleep(1)
             self._timeQueue.task_done()
 
