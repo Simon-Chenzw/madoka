@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, Optional
 
 import requests
 
+from .exception import MadokaInitError
+
 if TYPE_CHECKING:
     from .bot import QQbot
 
@@ -36,7 +38,7 @@ class BotBase:
         self._auth()
         self._verify()
         self._setConfig()
-        logger.info(f"successfully authenticate: session={self._session}")
+        logger.info(f"successfully authenticate: sessionKey={self._session}")
         logger.debug("get event loop")
         self._loop = asyncio.get_event_loop()
         return self
@@ -71,7 +73,7 @@ class BotBase:
         ).json()
         if res['code']:
             logger.critical(f"auth error: code={res['code']}")
-            raise Exception("error during auth")
+            raise MadokaInitError(res.get('msg', "during auth"))
         self._session = res['session']
 
     def _verify(self) -> None:
@@ -84,7 +86,7 @@ class BotBase:
         ).json()
         if res['code']:
             logger.critical(f"verify error: code={res['code']}")
-            raise Exception("error during verify")
+            raise MadokaInitError(res.get('msg', "during verify"))
 
     def _setConfig(self) -> None:
         res = requests.post(
@@ -97,7 +99,7 @@ class BotBase:
         ).json()
         if res['code']:
             logger.critical(f"set config error: code={res['code']}")
-            raise Exception("error during set config")
+            raise MadokaInitError(res.get('msg', "during set config"))
 
     def _releaseSession(self) -> None:
         res = requests.post(
@@ -109,6 +111,6 @@ class BotBase:
         ).json()
         if res['code']:
             logger.critical(f"release error: code={res['code']}")
-            raise Exception("error during release")
+            raise Exception("can't release sessionKey")
         else:
             logger.info(f"Successful release")

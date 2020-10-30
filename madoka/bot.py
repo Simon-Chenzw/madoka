@@ -11,6 +11,7 @@ from .receive import ReceiveUnit
 from .send import SendUnit
 from .schedule import ScheduleUnit
 from .asynchro import AsyncUnit
+from .exception import MadokaInitError, MadokaRuntimeError
 
 logger = logging.getLogger(__name__)
 
@@ -32,25 +33,24 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, AsyncUnit):
             bot=self,
         )
         self._autoRegister = autoRegister
-        self._hasError = False
 
     def __enter__(self) -> 'QQbot':
         try:
             logger.info(f"bot start: QQ={self.qid}")
             super().__enter__()
-        except:
+            return self
+        except Exception as err:
             logger.critical("Bot initialization failed")
-            self._hasError = True
-        return self
+            raise MadokaInitError("__enter__") from err
 
     def __exit__(self, exc_type, exc_value, traceback) -> bool:
-        if self._hasError:
-            logger.debug("bot has error, skip release")
-            return True
         catch = super().__exit__(exc_type, exc_value, traceback)
         if exc_type is KeyboardInterrupt:
             logger.info("exit because of KeyboardInterrupt")
             return True
+        # elif exc_type and exc_type.__cause__ is KeyboardInterrupt:
+        #     logger.info("exit because of KeyboardInterrupt")
+        #     return True
         elif exc_type:
             logger.critical(f"QQbot crashed: qid={self.qid}")
         else:
@@ -61,10 +61,6 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, AsyncUnit):
         """
         start working
         """
-        if self._hasError:
-            logger.error("bot has error, skip running")
-            return
-
         if self._autoRegister:
             for func in getRegister():
                 self.addFunction(func)
@@ -74,28 +70,30 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, AsyncUnit):
                 self.addTimeTask(task)
 
         # event loop
-        self._loop.run_until_complete(self._main())
-        self._loop.run_until_complete(self._loop.shutdown_asyncgens())
-        self._loop.close()
+        try:
+            self._loop.run_until_complete(self._main())
+        finally:
+            logger.info('shutdown all tasks')
+            for task in asyncio.Task.all_tasks():
+                task.cancel()
+            self._loop.run_until_complete(self._loop.shutdown_asyncgens())
+            self._loop.run_until_complete(asyncio.sleep(0.5))
+            self._loop.close()
 
     async def _main(self):
-        def cancel():
-            for t in tasks:
-                t.cancel()
-
         logger.info("bot start working")
-        tasks = list(
-            map(asyncio.ensure_future, [
+        try:
+            await asyncio.gather(
                 self._receiver(),
                 self._sender(),
                 self._schedule(),
                 self._asyncTask(),
-            ]))
-        try:
-            await asyncio.gather(*tasks)
-        except ConnectionClosedError:
+            )
+        except asyncio.CancelledError:
+            logger.debug("main task cancelled")
+        except ConnectionClosedError as err:
             logger.error(f"websockets connection closed")
-            cancel()
+            raise MadokaRuntimeError("websockets connection closed") from err
         except Exception as err:
             logger.exception(f"{err.__class__.__name__}':")
-            cancel()
+            raise MadokaRuntimeError() from err

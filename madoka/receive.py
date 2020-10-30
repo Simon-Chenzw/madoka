@@ -75,6 +75,7 @@ class EventUnit(BotBase):
             logger.error(f"get byte message {message}")
             return
         # TODO: low performance. should use 'run_in_executor'
+        # TODO: rewrite this module
         logger.debug(f"get event: {message}")
         try:
             event = Event(message)

@@ -33,3 +33,4 @@ from .register import (
     runOnce,
     runRepeat,
 )
+from .exception import MadokaError, MadokaInitError, MadokaRuntimeError
