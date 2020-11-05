@@ -1,141 +1,173 @@
 from __future__ import absolute_import, annotations
 
 import json
-from typing import Any, List, Literal, Optional, Union
-
-MessageChain = List['Text']
-Sender = Union['FriendSender', 'GroupSender', 'TempSender']
+from typing import Any, Dict, List, Literal, Optional, Union, Iterable
 
 
-class Context:
-    _sender: Optional[Sender] = None
-    _text: Optional[List[Text]] = None
-
-    def __init__(self, message: Union[str, Any]) -> None:
-        if isinstance(message, str):
-            self.js = json.loads(message)
-        else:
-            self.js = message
+class DictJson:
+    def __init__(self, json: Dict[str, Any]) -> None:
+        self.json = json
 
     def __getitem__(self, key: str) -> Any:
-        return self.js[key]
+        return self.json[key]
+
+
+class Context(DictJson):
+    _sender: Optional[Sender] = None
+    _messageChain: Optional[List['Text']] = None
+
+    def __init__(self, message: Union[str, Dict[str, Any]]) -> None:
+        if isinstance(message, str):
+            super().__init__(json.loads(message))
+        else:
+            super().__init__(message)
 
     @property
     def type(self) -> Literal['FriendMessage', 'GroupMessage', 'TempMessage']:
-        return self.js['type']
+        return self['type']
 
     @property
     def sender(self) -> Sender:
         if self._sender is None:
-            if self.type == 'FriendMessage':
-                self._sender = FriendSender(self.js['sender'])
-            elif self.type == 'GroupMessage':
-                self._sender = GroupSender(self.js['sender'])
-            else:
-                self._sender = TempSender(self.js['sender'])
+            self._sender = SenderBase.trans(self.type, self['sender'])
         return self._sender
 
     @property
-    def messageChain(self) -> MessageChain:
-        if self._text is None:
-            self._text = [Text(js) for js in self.js['messageChain']]
-        return self._text
-
-    @property
     def messageId(self) -> int:
-        return self.js['messageChain'][0]['id']
+        return self['messageChain'][0]['id']
+
+    @property
+    def messageChain(self) -> List['Text']:
+        if self._messageChain is None:
+            self._messageChain = [
+                Text.trans(js) for js in self['messageChain']
+            ]
+        return self._messageChain
+
+    def getFirst(self, type: str) -> Optional[Text]:
+        for text in self.messageChain:
+            if text.type == type:
+                return text
+
+    def getAll(self, type: str) -> List[Text]:
+        return [text for text in self.messageChain if text.type == type]
+
+    def iter(self, type: str) -> Iterable[Text]:
+        for text in self.messageChain:
+            if text.type == type:
+                yield text
+
+    @property
+    def text(self) -> str:
+        return ''.join(text['text'] for text in self.iter("Plain"))
 
 
-class FriendSender:
-    def __init__(self, js: Any) -> None:
-        self.js = js
+Sender = Union['FriendSender', 'GroupSender', 'TempSender']
 
-    def __getitem__(self, key: str) -> Any:
-        return self.js[key]
 
+class SenderBase(DictJson):
     @property
     def id(self) -> int:
-        return self.js['id']
+        return self['id']
 
+    @staticmethod
+    def trans(
+        messsageType: Literal['FriendMessage', 'GroupMessage', 'TempMessage'],
+        json: Dict[str, Any],
+    ) -> Sender:
+        if messsageType == 'FriendMessage':
+            return FriendSender(json)
+        elif messsageType == 'GroupMessage':
+            return GroupSender(json)
+        elif messsageType == 'TempMessage':
+            return TempSender(json)
+        else:
+            raise ValueError(
+                "sender's messsageType must be: 'FriendMessage', 'GroupMessage', 'TempMessage'"
+            )
+
+
+class FriendSender(SenderBase):
     @property
     def name(self) -> str:
-        return self.js['remark']
-
-
-class GroupSender:
-    def __init__(self, js: Any) -> None:
-        self.js = js
-
-    def __getitem__(self, key: str) -> Any:
-        return self.js[key]
+        return self['nickname']
 
     @property
-    def id(self) -> int:
-        return self.js['id']
+    def remark(self) -> str:
+        return self['remark']
 
+
+class GroupSender(SenderBase):
     @property
     def name(self) -> str:
-        return self.js['memberName']
+        return self['memberName']
 
     @property
     def permission(self) -> Literal['OWNER', 'ADMINISTRATOR', 'MEMBER']:
-        return self.js['permission']
+        return self['permission']
 
     @property
     def groupId(self) -> int:
-        return self.js['group']['id']
+        return self['group']['id']
 
     @property
     def groupName(self) -> str:
-        return self.js['group']['name']
+        return self['group']['name']
 
     @property
     def selfPermission(self) -> Literal['OWNER', 'ADMINISTRATOR', 'MEMBER']:
-        return self.js['group']['permission']
+        return self['group']['permission']
 
 
-class TempSender:
-    def __init__(self, js: Any) -> None:
-        self.js = js
-
-    def __getitem__(self, key: str) -> Any:
-        return self.js[key]
-
-    @property
-    def id(self) -> int:
-        return self.js['id']
-
+class TempSender(SenderBase):
     @property
     def name(self) -> str:
-        return self.js['memberName']
+        return self['memberName']
 
     @property
     def permission(self) -> Literal['OWNER', 'ADMINISTRATOR', 'MEMBER']:
-        return self.js['permission']
+        return self['permission']
 
     @property
     def groupId(self) -> int:
-        return self.js['group']['id']
+        return self['group']['id']
 
     @property
     def groupName(self) -> str:
-        return self.js['group']['name']
+        return self['group']['name']
 
     @property
     def selfPermission(self) -> Literal['OWNER', 'ADMINISTRATOR', 'MEMBER']:
-        return self.js['group']['permission']
+        return self['group']['permission']
 
 
-class Text:
-    def __init__(self, js: Any) -> None:
-        self.js = js
-
+class Text(DictJson):
     @property
     def type(self) -> str:
-        return self.js['type']
+        return self['type']
 
-    def __getitem__(self, key: str) -> Any:
-        return self.js[key]
+    @staticmethod
+    def trans(json: Dict[str, Any]) -> Text:
+        # TODO The way now is dirty
+        type = json['type']
+        if type == "Source":
+            return SourceText(json)
+        elif type == "Plain":
+            return PlainText(json['text'])
+        elif type == "Image":
+            return ImageText(json['path'], json['url'])
+        else:
+            return Text(json)
+
+
+class SourceText(Text):
+    @property
+    def id(self) -> int:
+        return self['id']
+
+    @property
+    def time(self) -> int:
+        return self['time']
 
 
 class PlainText(Text):
@@ -147,7 +179,7 @@ class PlainText(Text):
 
     @property
     def text(self) -> str:
-        return self.js['text']
+        return self['text']
 
 
 class ImageText(Text):
@@ -166,18 +198,16 @@ class ImageText(Text):
         })
 
 
-class Event:
+class Event(DictJson):
     def __init__(self, message: Union[str, Any]) -> None:
         if isinstance(message, str):
-            self.js = json.loads(message)
+            super().__init__(json.loads(message))
         else:
-            self.js = message
-
-    def __getitem__(self, key: str) -> Any:
-        return self.js[key]
+            super().__init__(message)
 
     @property
     def type(self) -> str:
-        return self.js['type']
+        return self['type']
+
 
 # TODO more Text and event

@@ -2,13 +2,14 @@ from __future__ import absolute_import
 
 import asyncio
 import logging
-from typing import Any, Callable, Coroutine, Dict, Literal, Optional, Union
+from typing import (Any, Callable, Coroutine, Dict, Iterable, Literal,
+                    Optional, Union)
 
 import aiohttp
 
 from .base import BotBase
-from .data import (Context, FriendSender, GroupSender, MessageChain, PlainText,
-                   Sender, TempSender, Text)
+from .data import (Context, FriendSender, GroupSender, PlainText, Sender,
+                   TempSender, Text)
 
 logger = logging.getLogger(__name__)
 
@@ -92,18 +93,18 @@ class SendUnit(BotBase):
     # special send method is below
 
     @staticmethod
-    def _toMessageChain(message: Union[str, Text, MessageChain]) -> Any:
+    def _toMessageChain(message: Union[str, Text, Iterable['Text']]) -> Any:
         if isinstance(message, str):
-            return [PlainText(message).js]
+            return [PlainText(message).json]
         elif isinstance(message, Text):
-            return [message.js]
+            return [message.json]
         else:
-            return [m.js for m in message]
+            return [m.json for m in message]
 
     def reply(
         self,
         sender: Sender,
-        message: Union[str, Text, MessageChain],
+        message: Union[str, Text, Iterable['Text']],
         quoteId: Optional[int] = None,
     ) -> None:
         if isinstance(sender, FriendSender):
@@ -129,7 +130,7 @@ class SendUnit(BotBase):
     def quote(
         self,
         context: Context,
-        message: Union[str, Text, MessageChain],
+        message: Union[str, Text, Iterable['Text']],
     ) -> None:
         self.reply(
             sender=context.sender,
@@ -140,7 +141,7 @@ class SendUnit(BotBase):
     def sendFriendMessage(
         self,
         target: int,
-        message: Union[str, Text, MessageChain],
+        message: Union[str, Text, Iterable['Text']],
         quote: Optional[int] = None,
     ) -> None:
         """
@@ -160,7 +161,7 @@ class SendUnit(BotBase):
     def sendGroupMessage(
         self,
         target: int,
-        message: Union[str, Text, MessageChain],
+        message: Union[str, Text, Iterable['Text']],
         quote: Optional[int] = None,
     ) -> None:
         """
@@ -181,7 +182,7 @@ class SendUnit(BotBase):
         self,
         target: int,
         group: int,
-        message: Union[str, Text, MessageChain],
+        message: Union[str, Text, Iterable['Text']],
         quote: Optional[int] = None,
     ) -> None:
         """
