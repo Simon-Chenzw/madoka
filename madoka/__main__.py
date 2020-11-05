@@ -8,7 +8,7 @@ import logging
 #The following should be import from madoka
 from .bot import QQbot
 from .data import Context
-from .filter import Censor, auth, isFriendMessage, isTempMessage
+from .filter import Censor, isFriendMessage, isTempMessage
 from .register import register, runOnce
 
 logger = logging.getLogger(__name__)
@@ -23,19 +23,16 @@ def helloworld(bot: QQbot):
         )
 
 
-isPing = Censor(lambda context: context.messageChain[1].type == 'Plain' and
-                context.messageChain[1]['text'] == 'ping')
+isPing = Censor(lambda context: context.text == 'ping')
 
 
-@register
-@auth((isFriendMessage | isTempMessage) & isPing)
+@register((isFriendMessage | isTempMessage) & isPing)
 def ping(bot: QQbot, context: Context) -> None:
     logger.info(f"ping from {context.sender.id}")
     bot.reply(context.sender, "pong")
 
 
-@register
-@auth(isFriendMessage & (~isPing))
+@register(isFriendMessage & ~isPing)
 def repeat(bot: QQbot, data: Context):
     text = ''.join(message['text'] for message in data.messageChain
                    if message.type == 'Plain')

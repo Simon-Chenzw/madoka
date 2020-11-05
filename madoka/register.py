@@ -4,6 +4,7 @@ import logging
 from typing import TYPE_CHECKING, Callable, List, Tuple
 
 from .data import Context, Event
+from .filter import Censor, auth
 from .schedule import TimeTask
 
 if TYPE_CHECKING:
@@ -28,17 +29,20 @@ def getScheduleRegistered() -> List[TimeTask]:
     return scheduleRegistered
 
 
-def register(
-    func: Callable[[QQbot, Context],
-                   None]) -> Callable[[QQbot, Context], None]:
-    registered.append(func)
-    return func
+def register(censor: Censor):
+    def inner(
+        func: Callable[[QQbot, Context], None],
+    ) -> Callable[[QQbot, Context], None]:
+        registered.append(auth(censor)(func))
+        return func
+
+    return inner
 
 
 def eventRegister(type: str):
     def inner(
         func: Callable[[QQbot, Event],
-                       None]) -> Callable[[QQbot, Event], None]:
+                       None], ) -> Callable[[QQbot, Event], None]:
         eventRegistered.append((type, func))
         return func
 

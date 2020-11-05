@@ -1,7 +1,7 @@
 from __future__ import absolute_import, annotations
 
 import json
-from typing import Any, Dict, List, Literal, Optional, Union, Iterable
+from typing import Any, Dict, Iterable, List, Literal, Optional, Union
 
 
 class DictJson:
