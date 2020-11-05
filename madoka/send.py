@@ -54,7 +54,7 @@ class SendUnit(BotBase):
                     params=data,
             ) as res:
                 js = await res.json()
-                logger.debug(f"{interface} response: {res}")
+                logger.debug(f"{interface} response [{res.status}]: {js}")
                 try:
                     if callback: callback(js)
                 except Exception as err:
@@ -73,7 +73,7 @@ class SendUnit(BotBase):
                     json=data,
             ) as res:
                 js = await res.json()
-                logger.debug(f"{interface} response: {res}")
+                logger.debug(f"{interface} response [{res.status}]: {js}")
                 try:
                     if callback: callback(js)
                 except Exception as err:
@@ -202,16 +202,23 @@ class SendUnit(BotBase):
     def messageFromId(
         self,
         messageId: int,
-        callback: Callable[[Dict[str, Any]], None],
+        callback: Callable[[Context], None],
     ) -> None:
         """
         /messageFromId
         """
+        def trans(json: Dict[str, Any]):
+            if json['code']:
+                logger.error(
+                    f"messageFromId failed: code={json['code']} {json['msg']}")
+            else:
+                callback(Context(json['data']))
+
         self.send(
             method="get",
             interface="messageFromId",
             data={"id": messageId},
-            callback=callback,
+            callback=trans,
         )
 
     # TODO more method
