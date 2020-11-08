@@ -87,7 +87,6 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, AsyncUnit):
                 self._receiver(),
                 self._sender(),
                 self._schedule(),
-                self._asyncTask(),
             )
         except asyncio.CancelledError:
             logger.debug("main task cancelled")
