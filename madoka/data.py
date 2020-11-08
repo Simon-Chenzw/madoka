@@ -4,7 +4,7 @@ import json
 from typing import Any, Dict, Iterable, List, Literal, Optional, Union
 
 
-class DictJson:
+class BaseOnJson:
     def __init__(self, json: Dict[str, Any]) -> None:
         self.json = json
 
@@ -12,7 +12,7 @@ class DictJson:
         return self.json[key]
 
 
-class Context(DictJson):
+class Context(BaseOnJson):
     _sender: Optional[Sender] = None
     _messageChain: Optional[List['Text']] = None
 
@@ -65,7 +65,7 @@ class Context(DictJson):
 Sender = Union['FriendSender', 'GroupSender', 'TempSender']
 
 
-class SenderBase(DictJson):
+class SenderBase(BaseOnJson):
     @property
     def id(self) -> int:
         return self['id']
@@ -141,7 +141,7 @@ class TempSender(SenderBase):
         return self['group']['permission']
 
 
-class Text(DictJson):
+class Text(BaseOnJson):
     @property
     def type(self) -> str:
         return self['type']
@@ -198,7 +198,7 @@ class ImageText(Text):
         })
 
 
-class Event(DictJson):
+class Event(BaseOnJson):
     def __init__(self, message: Union[str, Any]) -> None:
         if isinstance(message, str):
             super().__init__(json.loads(message))
