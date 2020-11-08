@@ -33,7 +33,7 @@ class MessageUnit(BotBase):
                 f"ws://{self._socket}/message?sessionKey={self._session}"
         ) as websocket:
             async for message in websocket:
-                asyncio.create_task(self._messageSolve(message))
+                self._loop.create_task(self._messageSolve(message))
 
     async def _messageSolve(self, message: Union[str, bytes]) -> None:
         if isinstance(message, bytes):
@@ -68,7 +68,7 @@ class EventUnit(BotBase):
                 f"ws://{self._socket}/event?sessionKey={self._session}"
         ) as websocket:
             async for message in websocket:
-                asyncio.create_task(self._eventSolve(message))
+                self._loop.create_task(self._eventSolve(message))
 
     async def _eventSolve(self, message: Union[str, bytes]) -> None:
         if isinstance(message, bytes):
