@@ -15,6 +15,7 @@ class BaseOnJson:
 class Context(BaseOnJson):
     _sender: Optional[Sender] = None
     _messageChain: Optional[List['Text']] = None
+    _text: Optional[str] = None
 
     def __init__(self, message: Union[str, Dict[str, Any]]) -> None:
         if isinstance(message, str):
@@ -59,7 +60,9 @@ class Context(BaseOnJson):
 
     @property
     def text(self) -> str:
-        return ''.join(text['text'] for text in self.iter("Plain"))
+        if self._text is None:
+            self._text = ''.join(text['text'] for text in self.iter("Plain"))
+        return self._text
 
 
 Sender = Union['FriendSender', 'GroupSender', 'TempSender']
