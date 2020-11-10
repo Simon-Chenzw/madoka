@@ -204,6 +204,7 @@ class SendUnit(BotBase):
         self,
         messageId: int,
         callback: Callable[[Context], None],
+        failedCallback: Optional[Callable] = None,
     ) -> None:
         """
         /messageFromId
@@ -212,6 +213,8 @@ class SendUnit(BotBase):
             if json['code']:
                 logger.error(
                     f"messageFromId failed: code={json['code']} {json['msg']}")
+                if failedCallback:
+                    failedCallback()
             else:
                 callback(Context(json['data']))
 
