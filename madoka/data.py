@@ -246,7 +246,7 @@ class QuoteText(Text):
     def text(self) -> str:
         if self._text is None:
             self._text = ''.join(text['text'] for text in self.origin
-                                 if text.type == "Plain")
+                                 if text['type'] == "Plain")
         return self._text
 
 
