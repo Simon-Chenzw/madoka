@@ -50,6 +50,14 @@ class Context(BaseOnJson):
             if text.type == type:
                 return text
 
+    def getFirstImage(self) -> Optional[ImageText]:
+        ret = self.getFirst("Image")
+        return ret if isinstance(ret, ImageText) else None
+
+    def getQuote(self) -> Optional[QuoteText]:
+        ret = self.getFirst("Quote")
+        return ret if isinstance(ret, QuoteText) else None
+
     def getAll(self, type: str) -> List[Text]:
         return [text for text in self.messageChain if text.type == type]
 
@@ -159,6 +167,8 @@ class Text(BaseOnJson):
             return PlainText(json['text'])
         elif type == "Image":
             return ImageText(json['path'], json['url'])
+        elif type == "Quote":
+            return QuoteText(json)
         else:
             return Text(json)
 
@@ -199,6 +209,45 @@ class ImageText(Text):
             "path": path,
             "url": url,
         })
+
+    @property
+    def path(self) -> Optional[str]:
+        return self['path']
+
+    @property
+    def url(self) -> Optional[str]:
+        return self['url']
+
+
+class QuoteText(Text):
+    _text: Optional[str] = None
+
+    @property
+    def id(self) -> int:
+        return self['id']
+
+    @property
+    def group(self) -> int:
+        return self['groupId']
+
+    @property
+    def sender(self) -> int:
+        return self['senderId']
+
+    @property
+    def target(self) -> int:
+        return self['targetId']
+
+    @property
+    def origin(self) -> List[Text]:
+        return self['origin']
+
+    @property
+    def text(self) -> str:
+        if self._text is None:
+            self._text = ''.join(text['text'] for text in self.origin
+                                 if text.type == "Plain")
+        return self._text
 
 
 class Event(BaseOnJson):

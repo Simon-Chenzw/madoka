@@ -11,6 +11,7 @@ from .data import (
     SourceText,
     PlainText,
     ImageText,
+    QuoteText,
     Event,
 )
 from .filter import (
