@@ -84,10 +84,7 @@ class SendUnit(BotBase):
         logger.info(f"waiting for send")
         while True:
             task = await self._sendQueue.get()
-            try:
-                await task
-            except Exception as err:
-                logger.exception("send failed:")
+            self._loop.create_task(task)
             self._sendQueue.task_done()
 
     # special send method is below
