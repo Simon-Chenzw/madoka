@@ -249,6 +249,10 @@ class QuoteText(Text):
                                  if text['type'] == "Plain")
         return self._text
 
+    @property
+    def hasImage(self) -> bool:
+        return '[图片]' in self.text
+
 
 class Event(BaseOnJson):
     def __init__(self, message: Union[str, Any]) -> None:
