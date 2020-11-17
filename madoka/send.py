@@ -15,12 +15,6 @@ logger = logging.getLogger(__name__)
 
 
 class SendUnit(BotBase):
-    def __enter__(self) -> 'SendUnit':
-        super().__enter__()
-        self._sendQueue: 'asyncio.Queue[Coroutine]' = asyncio.Queue(
-            loop=self._loop)
-        return self
-
     def send(
         self,
         method: Literal["get", "post"],
@@ -36,11 +30,9 @@ class SendUnit(BotBase):
         logger.debug(f"send call: {method} {interface} {data}")
         data['sessionKey'] = self._session
         if method == "get":
-            self._sendQueue.put_nowait(
-                self._asyncget(interface, data, callback))
+            self._loop.create_task(self._asyncget(interface, data, callback))
         elif method == "post":
-            self._sendQueue.put_nowait(
-                self._asyncpost(interface, data, callback))
+            self._loop.create_task(self._asyncpost(interface, data, callback))
 
     async def _asyncget(
         self,
@@ -79,13 +71,6 @@ class SendUnit(BotBase):
                     if callback: callback(js)
                 except Exception as err:
                     logger.exception(f"callback {callback.__name__} failed:")
-
-    async def _sender(self) -> None:
-        logger.info(f"waiting for send")
-        while True:
-            task = await self._sendQueue.get()
-            self._loop.create_task(task)
-            self._sendQueue.task_done()
 
     # special send method is below
 

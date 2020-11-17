@@ -92,7 +92,6 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, AsyncUnit):
         try:
             self.__mainTask = asyncio.gather(
                 self._receiver(),
-                self._sender(),
                 self._schedule(),
             )
             await self.__mainTask
