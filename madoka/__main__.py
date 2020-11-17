@@ -33,11 +33,9 @@ def ping(bot: QQbot, context: Context) -> None:
 
 
 @register(isFriendMessage & ~isPing)
-def repeat(bot: QQbot, data: Context):
-    text = ''.join(message['text'] for message in data.messageChain
-                   if message.type == 'Plain')
-    bot.reply(sender=data.sender, message=text)
-    logger.info(f"reply {data.sender.name} {text}")
+def repeat(bot: QQbot, context: Context):
+    logger.info(f"reply {context.sender.name} {context.text}")
+    bot.reply(context.sender, context.text)
 
 
 if __name__ == "__main__":
