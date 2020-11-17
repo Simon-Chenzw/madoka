@@ -16,6 +16,7 @@ from .exception import MadokaInitError, MadokaRuntimeError
 logger = logging.getLogger(__name__)
 
 
+# TODO and plugin util: support reload
 class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, AsyncUnit):
     def __init__(
         self,
@@ -72,22 +73,29 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit, AsyncUnit):
         # event loop
         try:
             self._loop.run_until_complete(self._main())
-        finally:
+        except KeyboardInterrupt:
+            # dirty way
             logger.info('shutdown all tasks')
             for task in asyncio.Task.all_tasks():
                 task.cancel()
+        finally:
             self._loop.run_until_complete(self._loop.shutdown_asyncgens())
             self._loop.run_until_complete(asyncio.sleep(0.5))
             self._loop.close()
 
+    def stop(self):
+        logger.info("stopping the bot")
+        self.__mainTask.cancel()
+
     async def _main(self):
         logger.info("bot start working")
         try:
-            await asyncio.gather(
+            self.__mainTask = asyncio.gather(
                 self._receiver(),
                 self._sender(),
                 self._schedule(),
             )
+            await self.__mainTask
         except asyncio.CancelledError:
             logger.debug("main task cancelled")
         except ConnectionClosedError as err:
