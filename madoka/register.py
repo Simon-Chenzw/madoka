@@ -1,10 +1,10 @@
 from __future__ import absolute_import, annotations
 
 import logging
+from functools import wraps
 from typing import TYPE_CHECKING, Callable, List, Tuple
 
 from .data import Context, Event
-from .filter import Censor, auth
 from .schedule import TimeTask
 
 if TYPE_CHECKING:
@@ -29,11 +29,16 @@ def getScheduleRegistered() -> List[TimeTask]:
     return scheduleRegistered
 
 
-def register(censor: Censor):
+def register(check: Callable[[Context], bool]):
     def inner(
         func: Callable[[QQbot, Context], None],
     ) -> Callable[[QQbot, Context], None]:
-        registered.append(auth(censor)(func))
+        @wraps(func)
+        def wrapper(bot: 'QQbot', context: Context):
+            if check(context):
+                func(bot, context)
+
+        registered.append(wrapper)
         return func
 
     return inner

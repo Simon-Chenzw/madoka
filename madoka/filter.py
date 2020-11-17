@@ -1,12 +1,8 @@
 from __future__ import absolute_import, annotations
 
-from functools import wraps
-from typing import TYPE_CHECKING, Callable, List, Union
+from typing import Callable, List, Union
 
 from .data import Context, FriendSender, GroupSender, TempSender
-
-if TYPE_CHECKING:
-    from .bot import QQbot
 
 
 class Censor:
@@ -14,9 +10,12 @@ class Censor:
 
     def __init__(
         self,
-        check_func: Callable[[Context], bool],
+        check: Callable[[Context], bool],
     ) -> None:
-        self.check = check_func
+        self.check = check
+
+    def __call__(self, context: Context) -> bool:
+        return self.check(context)
 
     def __eq__(self, rhs: Censor) -> Censor:
         return Censor(lambda js: self.check(js) == rhs.check(js))
@@ -32,20 +31,6 @@ class Censor:
 
     def __invert__(self) -> Censor:
         return Censor(lambda js: not self.check(js))
-
-
-def auth(filter: Censor):
-    def wrapper(
-        func: Callable[['QQbot', Context], None]
-    ) -> Callable[['QQbot', Context], None]:
-        @wraps(func)
-        def inner(bot: 'QQbot', context: Context):
-            if filter.check(context):
-                func(bot, context)
-
-        return inner
-
-    return wrapper
 
 
 isFriendMessage = Censor(
