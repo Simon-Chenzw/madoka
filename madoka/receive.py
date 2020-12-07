@@ -17,10 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 class MessageUnit(BotBase):
-    def __init__(self, *args, **kwargs) -> None:
-        self._function: List[Callable[['QQbot', Context],
-                                      Optional[Awaitable[None]]]] = []
-        super().__init__(*args, **kwargs)
+    _function: List[Callable[['QQbot', Context],
+                             Optional[Awaitable[None]]]] = []
 
     def addFunction(
         self,
@@ -53,10 +51,8 @@ class MessageUnit(BotBase):
 
 
 class EventUnit(BotBase):
-    def __init__(self, *args, **kwargs) -> None:
-        self._event: Dict[str, List[Callable[['QQbot', Event],
-                                             Optional[Awaitable[None]]]]] = {}
-        super().__init__(*args, **kwargs)
+    _event: Dict[str, List[Callable[['QQbot', Event],
+                                    Optional[Awaitable[None]]]]] = {}
 
     def addEvent(
         self,
