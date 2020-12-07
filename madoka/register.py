@@ -2,25 +2,19 @@ from __future__ import absolute_import, annotations, generator_stop
 
 import logging
 from functools import wraps
-from typing import TYPE_CHECKING, Callable, Coroutine, List, Optional, Tuple
+from typing import TYPE_CHECKING, Awaitable, Callable, List, Optional, Tuple
 
 from .data import Context, Event
 from .schedule import TimeTask
 
-if TYPE_CHECKING: 
+if TYPE_CHECKING:
     from .bot import QQbot
-    # TODO add Coroutine in function
-    # TODO change type hinting into data.py (maybe)
-    # functionReturn = Optional[Coroutine[None, None, None]]
-    contentChecker = Callable[[Context], bool]
-    contextFunction = Callable[[QQbot, Context], None]
-    eventFunction = Callable[[QQbot, Event], None]
-    eventTuple = Tuple[str, eventFunction]
-    TimeTaskFunction = Callable[[QQbot], None]
-    TimeTaskRegister = Callable[[TimeTaskFunction], TimeTaskFunction]
+    contextFunction = Callable[[QQbot, Context], Optional[Awaitable[None]]]
+    eventFunction = Callable[[QQbot, Event], Optional[Awaitable[None]]]
+    TimeTaskFunction = Callable[[QQbot], Optional[Awaitable[None]]]
 
 registered: List[contextFunction] = []
-eventRegistered: List[eventTuple] = []
+eventRegistered: List[Tuple[str, eventFunction]] = []
 scheduleRegistered: List[TimeTask] = []
 
 logger = logging.getLogger(__name__)
@@ -30,7 +24,7 @@ def getRegister() -> List[contextFunction]:
     return registered
 
 
-def getEventRegistered() -> List[eventTuple]:
+def getEventRegistered() -> List[Tuple[str, eventFunction]]:
     return eventRegistered
 
 
@@ -38,12 +32,12 @@ def getScheduleRegistered() -> List[TimeTask]:
     return scheduleRegistered
 
 
-def register(check: contentChecker):
+def register(check: Callable[[Context], bool]):
     def inner(func: contextFunction) -> contextFunction:
         @wraps(func)
         def wrapper(bot: 'QQbot', context: Context):
             if check(context):
-                func(bot, context)
+                return func(bot, context)
 
         registered.append(wrapper)
         return func
@@ -59,7 +53,7 @@ def eventRegister(type: str):
     return inner
 
 
-def runOnce(delay: int = 0) -> TimeTaskRegister:
+def runOnce(delay: int = 0) -> Callable[[TimeTaskFunction], TimeTaskFunction]:
     def register(func: TimeTaskFunction) -> TimeTaskFunction:
         scheduleRegistered.append(TimeTask.runOnce(
             func=func,
@@ -70,7 +64,10 @@ def runOnce(delay: int = 0) -> TimeTaskRegister:
     return register
 
 
-def runRepeat(interval: int, delay: int = 0) -> TimeTaskRegister:
+def runRepeat(
+    interval: int,
+    delay: int = 0,
+) -> Callable[[TimeTaskFunction], TimeTaskFunction]:
     def register(func: TimeTaskFunction) -> TimeTaskFunction:
         scheduleRegistered.append(
             TimeTask.runRepeat(
@@ -87,7 +84,7 @@ def runEveryDay(
     hour: int = 0,
     minute: int = 0,
     second: int = 0,
-) -> TimeTaskRegister:
+) -> Callable[[TimeTaskFunction], TimeTaskFunction]:
     def register(func: TimeTaskFunction) -> TimeTaskFunction:
         scheduleRegistered.append(
             TimeTask.runEveryDay(
@@ -106,7 +103,7 @@ def runEveryWeek(
     hour: int = 0,
     minute: int = 0,
     second: int = 0,
-) -> TimeTaskRegister:
+) -> Callable[[TimeTaskFunction], TimeTaskFunction]:
     """
     :weekday: 0 means Monday, 6 means Sunday
     """

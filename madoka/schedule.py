@@ -4,7 +4,7 @@ import asyncio
 import logging
 import time
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Callable, Optional, Tuple
+from typing import TYPE_CHECKING, Awaitable, Callable, Optional
 
 from .base import BotBase
 
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class TimeTask:
     def __init__(
         self,
-        func: Callable[['QQbot'], None],
+        func: Callable[['QQbot'], Optional[Awaitable[None]]],
         start: datetime,
         interval: Optional[timedelta],
     ) -> None:
@@ -57,7 +57,10 @@ class TimeTask:
         return self.timestamp != rhs.timestamp
 
     @staticmethod
-    def runOnce(func: Callable[['QQbot'], None], delay: int = 0) -> 'TimeTask':
+    def runOnce(
+        func: Callable[['QQbot'], Optional[Awaitable[None]]],
+        delay: int = 0,
+    ) -> 'TimeTask':
         today = datetime.today()
         return TimeTask(
             func=func,
@@ -66,9 +69,11 @@ class TimeTask:
         )
 
     @staticmethod
-    def runRepeat(func: Callable[['QQbot'], None],
-                  interval: int,
-                  delay: int = 0) -> 'TimeTask':
+    def runRepeat(
+        func: Callable[['QQbot'], Optional[Awaitable[None]]],
+        interval: int,
+        delay: int = 0,
+    ) -> 'TimeTask':
         today = datetime.today()
         return TimeTask(
             func=func,
@@ -77,10 +82,12 @@ class TimeTask:
         )
 
     @staticmethod
-    def runEveryDay(func: Callable[['QQbot'], None],
-                    hour: int = 0,
-                    minute: int = 0,
-                    second: int = 0) -> 'TimeTask':
+    def runEveryDay(
+        func: Callable[['QQbot'], Optional[Awaitable[None]]],
+        hour: int = 0,
+        minute: int = 0,
+        second: int = 0,
+    ) -> 'TimeTask':
         today = datetime.today()
         start = today.replace(
             hour=hour,
@@ -97,11 +104,13 @@ class TimeTask:
         )
 
     @staticmethod
-    def runEveryWeek(func: Callable[['QQbot'], None],
-                     weekday: int = 0,
-                     hour: int = 0,
-                     minute: int = 0,
-                     second: int = 0) -> 'TimeTask':
+    def runEveryWeek(
+        func: Callable[['QQbot'], Optional[Awaitable[None]]],
+        weekday: int = 0,
+        hour: int = 0,
+        minute: int = 0,
+        second: int = 0,
+    ) -> 'TimeTask':
         """
         :weekday: 0 means Monday, 6 means Sunday
         """
@@ -139,7 +148,9 @@ class ScheduleUnit(BotBase):
                 # TODO: low performance. should use 'run_in_executor'
                 logger.info(f"TimeTask: {task.func.__name__}")
                 try:
-                    task.func(self._bot)
+                    ret = task.func(self._bot)
+                    if ret and asyncio.iscoroutine(ret):
+                        await ret
                 except Exception as err:
                     logger.exception(f"schedule module: {task.func.__name__}")
                 if task.interval:
@@ -154,7 +165,7 @@ class ScheduleUnit(BotBase):
 
     def runOnce(
         self,
-        func: Callable[['QQbot'], None],
+        func: Callable[['QQbot'], Optional[Awaitable[None]]],
         delay: int = 0,
     ) -> None:
         self.addTimeTask(TimeTask.runOnce(
@@ -164,7 +175,7 @@ class ScheduleUnit(BotBase):
 
     def runRepeat(
         self,
-        func: Callable[['QQbot'], None],
+        func: Callable[['QQbot'], Optional[Awaitable[None]]],
         interval: int,
         delay: int = 0,
     ) -> None:
@@ -177,7 +188,7 @@ class ScheduleUnit(BotBase):
 
     def runEveryDay(
         self,
-        func: Callable[['QQbot'], None],
+        func: Callable[['QQbot'], Optional[Awaitable[None]]],
         hour: int = 0,
         minute: int = 0,
         second: int = 0,
@@ -192,7 +203,7 @@ class ScheduleUnit(BotBase):
 
     def runEveryWeek(
         self,
-        func: Callable[['QQbot'], None],
+        func: Callable[['QQbot'], Optional[Awaitable[None]]],
         weekday: int = 0,
         hour: int = 0,
         minute: int = 0,

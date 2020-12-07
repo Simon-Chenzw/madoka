@@ -2,7 +2,8 @@ from __future__ import absolute_import
 
 import asyncio
 import logging
-from typing import TYPE_CHECKING, Callable, Dict, List, Union
+from typing import (TYPE_CHECKING, Awaitable, Callable, Dict, List, Optional,
+                    Union)
 
 import websockets
 
@@ -17,12 +18,13 @@ logger = logging.getLogger(__name__)
 
 class MessageUnit(BotBase):
     def __init__(self, *args, **kwargs) -> None:
-        self._function: List[Callable[['QQbot', Context], None]] = []
+        self._function: List[Callable[['QQbot', Context],
+                                      Optional[Awaitable[None]]]] = []
         super().__init__(*args, **kwargs)
 
     def addFunction(
         self,
-        func: Callable[['QQbot', Context], None],
+        func: Callable[['QQbot', Context], Optional[Awaitable[None]]],
     ) -> None:
         logger.debug(f"add function: {func.__name__ }")
         self._function.append(func)
@@ -43,20 +45,23 @@ class MessageUnit(BotBase):
         logger.debug(f"get message: {message}")
         for func in self._function:
             try:
-                func(self._bot, Context(message))
+                ret = func(self._bot, Context(message))
+                if ret and asyncio.iscoroutine(ret):
+                    await ret
             except Exception as err:
                 logger.exception(f"message solve: {func.__name__}\n {message}")
 
 
 class EventUnit(BotBase):
     def __init__(self, *args, **kwargs) -> None:
-        self._event: Dict[str, List[Callable[['QQbot', Event], None]]] = {}
+        self._event: Dict[str, List[Callable[['QQbot', Event],
+                                             Optional[Awaitable[None]]]]] = {}
         super().__init__(*args, **kwargs)
 
     def addEvent(
         self,
         eventType: str,
-        func: Callable[['QQbot', Event], None],
+        func: Callable[['QQbot', Event], Optional[Awaitable[None]]],
     ) -> None:
         logger.debug(f"add event: {func.__name__ }")
         self._event.setdefault(eventType, [])
@@ -85,7 +90,9 @@ class EventUnit(BotBase):
         for func in self._event.get(event.type, []) + self._event.get(
                 'any', []):
             try:
-                func(self._bot, event)
+                ret = func(self._bot, event)
+                if ret and asyncio.iscoroutine(ret):
+                    await ret
             except Exception as err:
                 logger.exception(f"event solve: {func.__name__}\n {message}")
 
