@@ -39,6 +39,8 @@ class Text:
             return ImageText.deserialize(json)
         elif json['type'] == "Quote":
             return QuoteText.deserialize(json)
+        elif json['type'] == "At":
+            return AtText.deserialize(json)
         else:
             return Text(json)
 
