@@ -12,10 +12,13 @@ setup(
     # requires
     python_requires='>=3.8',
     install_requires=[
-        'aiohttp>=3.6',
-        'websockets>=8.0',
-        'requests>=2.18',
+        'aiohttp>=3.7',
+        'websockets>=8.1',
+        'requests>=2.25',
     ],
+    extras_require={
+        'all': ['rich>=9.10'],
+    },
     # description
     description="A bot framework based on mirai-api-http",
     long_description=long_description,

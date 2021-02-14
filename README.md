@@ -5,7 +5,7 @@ demo位于`demo.py`
 
 # install
 * develop install:
-    * python3.8 setup.py develop --user 
+    * python3.8 -m pip install -e .[all]
 
 * develop uninstall:
-    * python3.8 setup.py develop --user --uninstall 
+    * python3.8 -m pip uninstall madoka
