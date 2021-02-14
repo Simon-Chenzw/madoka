@@ -18,6 +18,11 @@ class EnvJson:
         if not os.path.isfile(self.path):
             raise FileNotFoundError(f"{os.path.abspath(self.path)} not found")
 
+    def __getitem__(self, key: str) -> Any:
+        with open(self.path, 'r', encoding='utf-8') as fp:
+            data: Dict[str, Any] = json.load(fp)
+        return data[key]
+
     def get(self, key: str, default: Optional[Any] = None) -> Any:
         with open(self.path, 'r', encoding='utf-8') as fp:
             data: Dict[str, Any] = json.load(fp)

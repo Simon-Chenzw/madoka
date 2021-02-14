@@ -3,8 +3,8 @@ import logging
 import sys
 
 from madoka import util, QQbot
-from madoka.register import Schedule, register, timedRegister
-from madoka.register.filter import isAdmin, isGroupMessage, isText
+from madoka.register import register, timedRegister, runOnce
+from madoka.filter import isAdmin, isGroupMessage, isText
 from madoka.typing import Context
 
 if 'debug' in sys.argv:
@@ -15,7 +15,7 @@ else:
 logger = logging.getLogger('madoka')
 
 
-@timedRegister(Schedule.runOnce())
+@timedRegister(runOnce())
 def helloworld(bot: QQbot):
     bot.sendToAdmin(message='奇跡も、魔法も、あるんだよ', )
 

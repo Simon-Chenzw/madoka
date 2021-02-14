@@ -5,7 +5,7 @@ import logging
 import time
 from typing import TYPE_CHECKING, Optional, Tuple, Union
 
-from ..register import Schedule
+from ..register import schedule
 from .base import BotBase
 
 if TYPE_CHECKING:
@@ -14,8 +14,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger('madoka')
 
 
-class TimedTask(Schedule):
-    def __init__(self, func: timedFunc, schedule: Schedule) -> None:
+class TimedTask(schedule.Schedule):
+    def __init__(self, func: timedFunc, schedule: schedule.Schedule) -> None:
         super().__init__(schedule.plan, schedule.interval)
         self.func = func
 
@@ -23,7 +23,7 @@ class TimedTask(Schedule):
         if self.interval:
             return TimedTask(
                 func=self.func,
-                schedule=Schedule(
+                schedule=schedule.Schedule(
                     start=self.plan + self.interval,
                     interval=self.interval,
                 ),
@@ -42,16 +42,16 @@ class ScheduleUnit(BotBase):
     def addTimedTask(
         self,
         func: timedFunc,
-        timeSetting: Union[int, Tuple[int, int], Schedule],
+        timeSetting: Union[int, Tuple[int, int], schedule.Schedule],
     ) -> None:
         if isinstance(timeSetting, int):
-            schedule = Schedule.runOnce(timeSetting)
+            sch = schedule.runOnce(timeSetting)
         elif isinstance(timeSetting, tuple):
-            schedule = Schedule.runRepeat(timeSetting[0], timeSetting[1])
+            sch = schedule.runRepeat(timeSetting[0], timeSetting[1])
         else:
-            schedule = timeSetting
-        logger.debug(f"add TimedTask: {func.__name__} {schedule.timestamp}")
-        self._timeQueue.put_nowait(TimedTask(func, schedule))
+            sch = timeSetting
+        logger.debug(f"add TimedTask: {func.__name__} {sch.timestamp}")
+        self._timeQueue.put_nowait(TimedTask(func, sch))
 
     async def _schedule(self) -> None:
         async def solve(task: TimedTask) -> None:

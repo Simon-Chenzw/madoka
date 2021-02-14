@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List, Union, Type
 
-from ..typing import AtText, Context, FriendSender, GroupSender, TempSender, Text
+from .typing import AtText, Context, FriendSender, GroupSender, TempSender, Text
 
 if TYPE_CHECKING:
-    from ..bot import QQbot
-    from ..typing.frame import contextCheckFunc
+    from .bot import QQbot
+    from .typing.frame import contextCheckFunc
 
 
 class Censor:
@@ -152,6 +152,10 @@ def isAt(target: int) -> Censor:
 
 def isText(s: str) -> Censor:
     return Censor(lambda bot, context: context.text == s)
+
+
+def isTextContain(s: str) -> Censor:
+    return Censor(lambda bot, context: s in context.text)
 
 
 def isTextStartWith(s: str) -> Censor:

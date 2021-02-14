@@ -43,60 +43,60 @@ class Schedule:
     def __ne__(self, rhs) -> bool:
         return self.timestamp != rhs.timestamp
 
-    @staticmethod
-    def runOnce(delay: int = 0) -> Schedule:
-        return Schedule(
-            start=datetime.today() + timedelta(seconds=delay),
-            interval=None,
-        )
+   
+def runOnce(delay: int = 0) -> Schedule:
+    return Schedule(
+        start=datetime.today() + timedelta(seconds=delay),
+        interval=None,
+    )
 
-    @staticmethod
-    def runRepeat(interval: int, delay: int = 0) -> Schedule:
-        return Schedule(
-            start=datetime.today() + timedelta(seconds=delay),
-            interval=timedelta(seconds=interval),
-        )
 
-    @staticmethod
-    def runEveryDay(
-        hour: int = 0,
-        minute: int = 0,
-        second: int = 0,
-    ) -> Schedule:
-        today = datetime.today()
-        start = today.replace(
-            hour=hour,
-            minute=minute,
-            second=second,
-            microsecond=0,
-        )
-        while start < today:
-            start += timedelta(days=1)
-        return Schedule(
-            start=start,
-            interval=timedelta(days=1),
-        )
+def runRepeat(interval: int, delay: int = 0) -> Schedule:
+    return Schedule(
+        start=datetime.today() + timedelta(seconds=delay),
+        interval=timedelta(seconds=interval),
+    )
 
-    @staticmethod
-    def runEveryWeek(
-        weekday: int = 0,
-        hour: int = 0,
-        minute: int = 0,
-        second: int = 0,
-    ) -> Schedule:
-        """
-        :weekday: 0 means Monday, 6 means Sunday
-        """
-        today = datetime.today()
-        start = today.replace(
-            hour=hour,
-            minute=minute,
-            second=second,
-            microsecond=0,
-        )
-        while start < today or start.weekday() != weekday:
-            start += timedelta(days=1)
-        return Schedule(
-            start=start,
-            interval=timedelta(days=7),
-        )
+
+def runEveryDay(
+    hour: int = 0,
+    minute: int = 0,
+    second: int = 0,
+) -> Schedule:
+    today = datetime.today()
+    start = today.replace(
+        hour=hour,
+        minute=minute,
+        second=second,
+        microsecond=0,
+    )
+    while start < today:
+        start += timedelta(days=1)
+    return Schedule(
+        start=start,
+        interval=timedelta(days=1),
+    )
+
+
+def runEveryWeek(
+    weekday: int = 0,
+    hour: int = 0,
+    minute: int = 0,
+    second: int = 0,
+) -> Schedule:
+    """
+    :weekday: 0 means Monday, 6 means Sunday
+    """
+    today = datetime.today()
+    start = today.replace(
+        hour=hour,
+        minute=minute,
+        second=second,
+        microsecond=0,
+    )
+    while start < today or start.weekday() != weekday:
+        start += timedelta(days=1)
+    return Schedule(
+        start=start,
+        interval=timedelta(days=7),
+    )
