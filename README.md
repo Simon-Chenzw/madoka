@@ -1,7 +1,7 @@
 # madoka
 A asynchronous bot framework based on mirai-api-http  
 开发中，随时更改各种地方  
-demo位于`__main__.py`  
+demo位于`demo.py`  
 
 # install
 * develop install:
