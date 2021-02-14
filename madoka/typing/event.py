@@ -13,5 +13,9 @@ class Event:
         return self._json[key]
 
     @property
+    def serialize(self):
+        return self._json
+
+    @property
     def type(self) -> str:
         return self['type']
