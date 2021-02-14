@@ -44,6 +44,9 @@ class ScheduleUnit(BotBase):
         func: timedFunc,
         timeSetting: Union[int, Tuple[int, int], schedule.Schedule],
     ) -> None:
+        """
+        :timeSetting: `int` means runOnce; `(int, int)` means runRepeat;
+        """
         if isinstance(timeSetting, int):
             sch = schedule.runOnce(timeSetting)
         elif isinstance(timeSetting, tuple):
