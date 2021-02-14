@@ -125,7 +125,6 @@ def isGroupOwner(fromGroup: bool = True) -> Censor:
     return Censor(check)
 
 
-# TODO rewrite
 def hasType_str(type: str) -> Censor:
     def check(bot: QQbot, context: Context) -> bool:
         for text in context.messageChain:
@@ -148,6 +147,16 @@ def isAt(target: int) -> Censor:
         return False
 
     return Censor(check)
+
+
+def selfAtcheck(bot: QQbot, context: Context) -> bool:
+    for text in context.iter(AtText):
+        if text.target == bot.qid:
+            return True
+    return False
+
+
+isAtSelf = Censor(selfAtcheck)
 
 
 def isText(s: str) -> Censor:
