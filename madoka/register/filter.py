@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Union
+from typing import TYPE_CHECKING, List, Union, Type
 
-from ..typing import AtText, Context, FriendSender, GroupSender, TempSender
+from ..typing import AtText, Context, FriendSender, GroupSender, TempSender, Text
 
 if TYPE_CHECKING:
     from ..bot import QQbot
@@ -126,7 +126,7 @@ def isGroupOwner(fromGroup: bool = True) -> Censor:
 
 
 # TODO rewrite
-def hasType(type: str) -> Censor:
+def hasType_str(type: str) -> Censor:
     def check(bot: QQbot, context: Context) -> bool:
         for text in context.messageChain:
             if text.type == type:
@@ -134,6 +134,10 @@ def hasType(type: str) -> Censor:
         return False
 
     return Censor(check)
+
+
+def hasType(type: Type[Text]) -> Censor:
+    return Censor(lambda bot, context: context.get(type) is not None)
 
 
 def isAt(target: int) -> Censor:
