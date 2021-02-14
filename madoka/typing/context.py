@@ -25,6 +25,10 @@ class Context:
         return self._json[key]
 
     @property
+    def serialize(self):
+        return self._json
+
+    @property
     def type(self) -> Literal['FriendMessage', 'GroupMessage', 'TempMessage']:
         return self['type']
 
