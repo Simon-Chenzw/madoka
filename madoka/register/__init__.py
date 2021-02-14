@@ -1,4 +1,3 @@
-from . import filter
 from .context import register
 from .event import register as eventRegister
 from .schedule import runEveryDay, runEveryWeek, runOnce, runRepeat
