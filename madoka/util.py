@@ -60,7 +60,12 @@ def loadAll(
     return plugin
 
 
-def setLogging(level: int = logging.INFO, activeFile: bool = False):
+def setLogging(
+    level: int = logging.INFO,
+    activeFile: bool = False,
+    dir='log',
+    name='madoka.log',
+):
     logger = logging.getLogger()
     logger.setLevel(level)
 
@@ -78,10 +83,9 @@ def setLogging(level: int = logging.INFO, activeFile: bool = False):
     if activeFile:
         from logging.handlers import TimedRotatingFileHandler
 
-        log_path = os.path.join(os.getcwd(), "log")
-        if not os.path.isdir(log_path):
-            os.mkdir(log_path)
-        fname = os.path.join(log_path, "madoka.log")
+        if not os.path.isdir(dir):
+            os.makedirs(dir)
+        fname = os.path.join(dir, name)
 
         file_handler = TimedRotatingFileHandler(fname, when="midnight")
         file_handler.setLevel(level)
