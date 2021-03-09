@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from contextvars import ContextVar
 from typing import TYPE_CHECKING, Dict, List, Union
 
 import websockets
@@ -13,6 +14,8 @@ if TYPE_CHECKING:
     from ..typing.frame import contextFunc, eventFunc
 
 logger = logging.getLogger('madoka')
+
+contextStore: ContextVar[Context] = ContextVar('context')
 
 
 class MessageUnit(BotBase):
@@ -43,6 +46,7 @@ class MessageUnit(BotBase):
         if isinstance(message, str):
             logger.debug(f"get message: {message}")
             context = Context(message)
+            contextStore.set(context)
             await asyncio.gather(*map(solve, self._function))
         else:
             logger.error(f"get bytes message, {message=}")

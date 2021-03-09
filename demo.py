@@ -23,12 +23,12 @@ def helloworld(bot: QQbot):
 @register((isAdmin(True) | ~isGroupMessage) & isText('ping'))
 def ping(bot: QQbot, context: Context) -> None:
     logger.info(f"ping from {context.sender.id}")
-    bot.reply(context.sender, 'pong')
+    bot.reply('pong')
 
 
 @register(isAdmin(True) & isText('stop'))
 async def stop(bot: QQbot, context: Context) -> None:
-    bot.reply(context.sender, 'Madoka will stop')
+    bot.reply('Madoka will stop')
     await asyncio.sleep(3)
     bot.stop()
 

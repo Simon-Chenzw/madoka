@@ -9,6 +9,7 @@ from ..typing import (Context, FriendSender, GroupSender, PlainText, Sender,
                       TempSender, Text)
 from .base import BotBase
 from .exception import MadokaRuntimeError
+from .receive import contextStore
 
 logger = logging.getLogger('madoka')
 
@@ -85,10 +86,11 @@ class SendUnit(BotBase):
 
     def reply(
         self,
-        sender: Sender,
         message: Union[str, Text, Iterable['Text']],
         quoteId: Optional[int] = None,
     ) -> None:
+        sender = contextStore.get().sender
+        logger.debug(f"reply to {sender.name} {sender.id}")
         if isinstance(sender, FriendSender):
             self.sendFriendMessage(
                 target=sender.id,
@@ -111,13 +113,13 @@ class SendUnit(BotBase):
 
     def quoteReply(
         self,
-        context: Context,
         message: Union[str, Text, Iterable['Text']],
     ) -> None:
+        messageId = contextStore.get().messageId
+        logger.debug(f"quote reply to messageId={messageId}")
         self.reply(
-            sender=context.sender,
             message=message,
-            quoteId=context.messageId,
+            quoteId=messageId,
         )
 
     @staticmethod
