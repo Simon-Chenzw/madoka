@@ -2,15 +2,15 @@ import asyncio
 import logging
 import sys
 
-from madoka import util, QQbot
+from madoka import QQbot
 from madoka.register import register, timedRegister, runOnce
 from madoka.filter import isAdmin, isGroupMessage, isText
 from madoka.typing import Context
 
 if 'debug' in sys.argv:
-    util.setLogging(logging.DEBUG)
+    logging.getLogger().setLevel(logging.DEBUG)
 else:
-    util.setLogging(logging.INFO)
+    logging.getLogger().setLevel(logging.INFO)
 
 logger = logging.getLogger('madoka')
 
