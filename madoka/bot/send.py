@@ -90,23 +90,25 @@ class SendUnit(BotBase):
         quoteId: Optional[int] = None,
     ) -> None:
         sender = contextStore.get().sender
-        logger.debug(f"reply to {sender.name} {sender.id}")
         if isinstance(sender, FriendSender):
+            logger.debug(f"reply to {sender.nickname} {sender.id}")
             self.sendFriendMessage(
                 target=sender.id,
                 message=message,
                 quote=quoteId,
             )
         elif isinstance(sender, GroupSender):
+            logger.debug(f"reply to {sender.memberName} {sender.id}")
             self.sendGroupMessage(
-                target=sender.groupId,
+                target=sender.group.id,
                 message=message,
                 quote=quoteId,
             )
         elif isinstance(sender, TempSender):
+            logger.debug(f"reply to {sender.memberName} {sender.id}")
             self.sendTempMessage(
                 target=sender.id,
-                group=sender.groupId,
+                group=sender.group.id,
                 message=message,
                 quote=quoteId,
             )
@@ -125,12 +127,12 @@ class SendUnit(BotBase):
     @staticmethod
     def _formatMessage(message: Union[str, Text, Iterable['Text']]) -> Any:
         if isinstance(message, str):
-            return [PlainText(message).serialize]
+            return [PlainText(message).dict()]
         elif isinstance(message, Text):
-            return [message.serialize]
+            return [message.dict()]
         else:
             try:
-                return [text.serialize for text in message]
+                return [text.dict() for text in message]
             except:
                 logger.exception(
                     f"format error: {message.__class__.__name__=}")
@@ -196,7 +198,7 @@ class SendUnit(BotBase):
                 data={"id": messageId},
             )
             if json['code'] == 0:
-                return Context(json['data'])
+                return Context.parse_obj(json['data'])
             else:
                 logger.error(
                     f"messageFromId failed: code={json['code']} {json['msg']}")

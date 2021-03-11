@@ -1,21 +1,86 @@
-import json
-from typing import Any, Dict, Union
+from __future__ import annotations
+
+import typing
+from typing import Dict, List, Literal, Optional, Type
+
+from pydantic import BaseModel  # pylint: disable=no-name-in-module
 
 
-class Event:
-    def __init__(self, message: Union[str, Dict[str, Any]]) -> None:
-        if isinstance(message, str):
-            self._json = json.loads(message)
+class Event(BaseModel, extra='forbid'):
+    """
+    auto choice subclass when instantiating
+    __init__ of subclass should be compatible with pydantic
+    :type: Used for type checking, but Event should not be instantiated
+    """
+
+    type: str
+
+    class TypeMap:
+        types: Dict[str, Type[Event]] = {}
+        extra: Type[Event]
+
+        @classmethod
+        def add(cls, name: str, cls_: Type[Event]) -> None:
+            if name not in cls.types:
+                cls.types[name] = cls_
+            else:
+                raise ValueError("type can't have same typename")
+
+        @classmethod
+        def get(cls, name: str) -> Type[Event]:
+            return cls.types.get(name, cls.extra)
+
+    def __init_subclass__(
+        cls: Type[Event],
+        **kwargs,
+    ) -> None:
+        if 'type' in cls.__fields__ and typing.get_origin(
+                cls.__fields__['type'].type_) is Literal:
+            cls.TypeMap.add(
+                typing.get_args(cls.__fields__['type'].type_)[0],
+                cls,
+            )
+        elif cls.__name__ == 'ExtraEvent':
+            cls.TypeMap.extra = cls
+        return super().__init_subclass__(**kwargs)
+
+    def __new__(cls, *args, **kwargs) -> Type[Event]:
+        if cls is Event:
+            if 'type' in kwargs:
+                return super().__new__(cls.TypeMap.get(kwargs['type']))
+            else:
+                return super().__new__(cls.TypeMap.extra)
         else:
-            self._json = message
+            return super().__new__(cls)
 
-    def __getitem__(self, key: str) -> Any:
-        return self._json[key]
 
-    @property
-    def serialize(self):
-        return self._json
+class ExtraEvent(Event, extra='allow'):
+    pass
 
-    @property
-    def type(self) -> str:
-        return self['type']
+
+class BotOnlineEvent(Event):
+    type: Literal['BotOnlineEvent']
+    qq: int
+
+
+class BotOfflineEventActive(Event):
+    type: Literal['BotOfflineEventActive']
+    qq: int
+
+
+class BotOfflineEventForce(Event):
+    type: Literal['BotOfflineEventForce']
+    qq: int
+
+
+class BotOfflineEventDropped(Event):
+    type: Literal['BotOfflineEventDropped']
+    qq: int
+
+
+class BotReloginEvent(Event):
+    type: Literal['BotReloginEvent']
+    qq: int
+
+
+# TODO more Event and resp

@@ -1,85 +1,38 @@
-from typing import Any, Dict, Literal, Union
+from typing import Literal, Union
+
+from pydantic import BaseModel  # pylint: disable=no-name-in-module
 
 Sender = Union['FriendSender', 'GroupSender', 'TempSender']
 
+# TODO: rename Sender to User, for typing in Event (wait for mirai-api-http 2.0)
 
-class SenderBase:
-    def __init__(self, json: Dict[str, Any]) -> None:
-        self._json = json
 
-    def __getitem__(self, key: str) -> Any:
-        return self._json[key]
+class GroupInfo(BaseModel):
+    id: int
+    name: str
+    permission: Literal['OWNER', 'ADMINISTRATOR', 'MEMBER']
 
-    @property
-    def id(self) -> int:
-        return self['id']
 
-    @staticmethod
-    def trans(
-        messsageType: Literal['FriendMessage', 'GroupMessage', 'TempMessage'],
-        json: Dict[str, Any],
-    ) -> Sender:
-        if messsageType == 'FriendMessage':
-            return FriendSender(json)
-        elif messsageType == 'GroupMessage':
-            return GroupSender(json)
-        elif messsageType == 'TempMessage':
-            return TempSender(json)
-        else:
-            raise ValueError(
-                "sender's messsageType must be: 'FriendMessage', 'GroupMessage', 'TempMessage'"
-            )
+class SenderBase(BaseModel, extra='forbid'):
+    """
+    can't auto choice subclass when instantiating
+    SenderBase should not be instantiated
+    """
+    id: int
 
 
 class FriendSender(SenderBase):
-    @property
-    def name(self) -> str:
-        return self['nickname']
-
-    @property
-    def remark(self) -> str:
-        return self['remark']
+    nickname: str
+    remark: str
 
 
 class GroupSender(SenderBase):
-    @property
-    def name(self) -> str:
-        return self['memberName']
-
-    @property
-    def permission(self) -> Literal['OWNER', 'ADMINISTRATOR', 'MEMBER']:
-        return self['permission']
-
-    @property
-    def groupId(self) -> int:
-        return self['group']['id']
-
-    @property
-    def groupName(self) -> str:
-        return self['group']['name']
-
-    @property
-    def selfPermission(self) -> Literal['OWNER', 'ADMINISTRATOR', 'MEMBER']:
-        return self['group']['permission']
+    memberName: str
+    permission: Literal['OWNER', 'ADMINISTRATOR', 'MEMBER']
+    group: GroupInfo
 
 
 class TempSender(SenderBase):
-    @property
-    def name(self) -> str:
-        return self['memberName']
-
-    @property
-    def permission(self) -> Literal['OWNER', 'ADMINISTRATOR', 'MEMBER']:
-        return self['permission']
-
-    @property
-    def groupId(self) -> int:
-        return self['group']['id']
-
-    @property
-    def groupName(self) -> str:
-        return self['group']['name']
-
-    @property
-    def selfPermission(self) -> Literal['OWNER', 'ADMINISTRATOR', 'MEMBER']:
-        return self['group']['permission']
+    memberName: str
+    permission: Literal['OWNER', 'ADMINISTRATOR', 'MEMBER']
+    group: GroupInfo

@@ -45,7 +45,7 @@ class MessageUnit(BotBase):
 
         if isinstance(message, str):
             logger.debug(f"get message: {message}")
-            context = Context(message)
+            context = Context.parse_raw(message)
             contextStore.set(context)
             await asyncio.gather(*map(solve, self._function))
         else:
@@ -78,7 +78,7 @@ class EventUnit(BotBase):
 
         if isinstance(message, str):
             logger.debug(f"get event: {message}")
-            event = Event(message)
+            event = Event.parse_raw(message)
             await asyncio.gather(*map(
                 solve,
                 self._event.get(event.type, []) + self._event.get('any', []),

@@ -15,6 +15,7 @@ setup(
         'aiohttp>=3.7',
         'websockets>=8.1',
         'requests>=2.25',
+        'pydantic>=1.8',
     ],
     extras_require={
         'all': ['rich>=9.10'],

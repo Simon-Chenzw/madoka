@@ -1,142 +1,141 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Type, TypeVar
+import typing
+from typing import Dict, List, Literal, Optional, Type
 
-T = TypeVar('T')
+from pydantic import BaseModel  # pylint: disable=no-name-in-module
 
 
-class Text:
-    def __init__(self, json: Dict[str, Any]) -> None:
-        self._json = json
+class Text(BaseModel, extra='forbid'):
+    """
+    auto choice subclass when instantiating
+    __init__ of subclass should be compatible with pydantic
+    :type: Used for type checking, but Text should not be instantiated
+    """
 
-    def __getitem__(self, key: str) -> Any:
-        return self._json[key]
+    type: str
+
+    class TypeMap:
+        types: Dict[str, Type[Text]] = {}
+        extra: Type[Text]
+
+        @classmethod
+        def add(cls, name: str, cls_: Type[Text]) -> None:
+            if name not in cls.types:
+                cls.types[name] = cls_
+            else:
+                raise ValueError("type can't have same typename")
+
+        @classmethod
+        def get(cls, name: str) -> Type[Text]:
+            return cls.types.get(name, cls.extra)
+
+    def __init_subclass__(
+        cls: Type[Text],
+        **kwargs,
+    ) -> None:
+        if 'type' in cls.__fields__ and typing.get_origin(
+                cls.__fields__['type'].type_) is Literal:
+            cls.TypeMap.add(
+                typing.get_args(cls.__fields__['type'].type_)[0],
+                cls,
+            )
+        elif cls.__name__ == 'ExtraText':
+            cls.TypeMap.extra = cls
+        return super().__init_subclass__(**kwargs)
+
+    def __new__(cls, *args, **kwargs) -> Type[Text]:
+        if cls is Text:
+            if 'type' in kwargs:
+                return super().__new__(cls.TypeMap.get(kwargs['type']))
+            else:
+                return super().__new__(cls.TypeMap.extra)
+        else:
+            return super().__new__(cls)
 
     def __str__(self) -> str:
         return ''
 
-    @property
-    def serialize(self):
-        return self._json
 
-    @classmethod
-    def deserialize(cls: Type[T], json: Dict[str, Any]) -> T:
-        obj = cls.__new__(cls)
-        obj._json = json
-        return obj
-
-    @property
-    def type(self) -> str:
-        return self['type']
-
-    @staticmethod
-    def trans(json: Dict[str, Any]) -> Text:
-        if json['type'] == "Source":
-            return SourceText.deserialize(json)
-        elif json['type'] == "Plain":
-            return PlainText.deserialize(json)
-        elif json['type'] == "Image":
-            return ImageText.deserialize(json)
-        elif json['type'] == "Quote":
-            return QuoteText.deserialize(json)
-        elif json['type'] == "At":
-            return AtText.deserialize(json)
-        else:
-            return Text(json)
+class ExtraText(Text, extra='allow'):
+    pass
 
 
 class SourceText(Text):
-    @property
-    def id(self) -> int:
-        return self['id']
+    type: Literal['Source']
+    id: int
+    time: int
+
+
+class QuoteText(Text):
+    type: Literal['Quote']
+    id: int
+    groupId: int
+    senderId: int
+    targetId: int
+    origin: List[Text]
 
     @property
-    def time(self) -> int:
-        return self['time']
+    def originText(self) -> str:
+        return ''.join(map(str, self.origin))
+
+    @property
+    def hasImage(self) -> bool:
+        return '[图片]' in self.originText
+
+
+class AtText(Text):
+    type: Literal['At']
+    target: int
+    display: str
+
+    def __str__(self) -> str:
+        return self.display
+
+
+class AtAllText(Text):
+    type: Literal['AtAll']
+
+
+class FaceText(Text):
+    # TODO test
+    type: Literal['Face']
+    faceId: Optional[int]
+    name: Optional[str]
 
 
 class PlainText(Text):
-    def __init__(self, text: str) -> None:
-        super().__init__({
-            "type": "Plain",
-            "text": text,
-        })
+    type: Literal['Plain']
+    text: str
+
+    def __init__(self, text: str, type: str = 'Plain') -> None:
+        super().__init__(type=type, text=text)
 
     def __str__(self) -> str:
         return self.text
 
-    @property
-    def text(self) -> str:
-        return self['text']
-
 
 class ImageText(Text):
-    def __init__(
-        self,
-        path: Optional[str] = None,
-        url: Optional[str] = None,
-    ) -> None:
-        """
-        :path: Need to be a relative path
-        """
-        super().__init__({
-            "type": "Image",
-            "path": path,
-            "url": url,
-        })
+    # TODO test
+    type: Literal['Image']
+    imageId: str
+    url: str
+    path: Optional[str]
 
-    @property
-    def path(self) -> Optional[str]:
-        return self['path']
-
-    @property
-    def url(self) -> Optional[str]:
-        return self['url']
+    # TODO
+    # def __init__(
+    #     self,
+    #     path: Optional[str] = None,
+    #     url: Optional[str] = None,
+    # ) -> None:
+    #     """
+    #     :path: Need to be a relative path
+    #     """
+    #     super().__init__(path=path, url=url)
 
 
-class QuoteText(Text):
-    _text: Optional[str] = None
-
-    @property
-    def id(self) -> int:
-        return self['id']
-
-    @property
-    def group(self) -> int:
-        return self['groupId']
-
-    @property
-    def sender(self) -> int:
-        return self['senderId']
-
-    @property
-    def target(self) -> int:
-        return self['targetId']
-
-    @property
-    def origin(self) -> List[Text]:
-        return self['origin']
-
-    @property
-    def text(self) -> str:
-        if self._text is None:
-            self._text = ''.join(text['text'] for text in self.origin
-                                 if text['type'] == "Plain")
-        return self._text
-
-    @property
-    def hasImage(self) -> bool:
-        return '[图片]' in self.text
+class FlashImageText(ImageText):
+    type: Literal['FlashImage']
 
 
-class AtText(Text):
-    def __str__(self) -> str:
-        return self.display
-
-    @property
-    def target(self) -> int:
-        return self['target']
-
-    @property
-    def display(self) -> str:
-        return self['display']
+# TODO more Text type

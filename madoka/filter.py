@@ -90,9 +90,9 @@ def isGroup(
 
     def check(bot: QQbot, context: Context) -> bool:
         if isinstance(context.sender, GroupSender):
-            return context.sender.groupId in id
+            return context.sender.group.id in id
         elif fromGroup and isinstance(context.sender, TempSender):
-            return context.sender.groupId in id
+            return context.sender.group.id in id
         return False
 
     return Censor(check)

@@ -1,62 +1,49 @@
 from __future__ import annotations
 
-import json
-from typing import (Any, Dict, Iterator, List, Literal, Optional, Type,
-                    TypeVar, Union)
+from typing import Iterator, List, Literal, Optional, Type, TypeVar
 
-from .sender import Sender, SenderBase
+from pydantic import BaseModel  # pylint: disable=no-name-in-module
+
+from .sender import FriendSender, GroupSender, Sender, TempSender
 from .text import SourceText, Text
 
-T = TypeVar('T')
+G_Text = TypeVar('G_Text', bound=Text)
 
 
-class Context:
-    _sender: Optional[Sender] = None
-    _messageChain: Optional[List[Text]] = None
-    _text: Optional[str] = None
+class Context(BaseModel, extra='forbid'):
+    """
+    auto choice subclass when instantiating
+    all instantiate should use pydantic
+    :params: Used for type checking, but Text should not be instantiated
+    """
 
-    def __init__(self, message: Union[str, Dict[str, Any]]) -> None:
-        if isinstance(message, str):
-            self._json = json.loads(message)
+    type: Literal['FriendMessage', 'GroupMessage', 'TempMessage']
+    messageChain: List[Text]
+    sender: Sender
+
+    def __new__(cls, *args, **kwargs) -> Type[Context]:
+        if cls is Context:
+            if kwargs['type'] == 'FriendMessage':
+                return super().__new__(FriendContext)
+            elif kwargs['type'] == 'GroupMessage':
+                return super().__new__(GroupContext)
+            elif kwargs['type'] == 'TempMessage':
+                return super().__new__(TempContext)
+            else:
+                raise ValueError("Error Context type")
         else:
-            self._json = message
-
-    def __getitem__(self, key: str) -> Any:
-        return self._json[key]
-
-    @property
-    def serialize(self):
-        return self._json
-
-    @property
-    def type(self) -> Literal['FriendMessage', 'GroupMessage', 'TempMessage']:
-        return self['type']
-
-    @property
-    def sender(self) -> Sender:
-        if self._sender is None:
-            self._sender = SenderBase.trans(self.type, self['sender'])
-        return self._sender
+            return super().__new__(cls)
 
     @property
     def messageId(self) -> int:
         return self.getExist(SourceText).id
 
     @property
-    def messageChain(self) -> List[Text]:
-        if self._messageChain is None:
-            self._messageChain = [
-                Text.trans(js) for js in self['messageChain']
-            ]
-        return self._messageChain
-
-    @property
     def text(self) -> str:
-        if self._text is None:
-            self._text = ''.join(map(str, self.messageChain))
-        return self._text
+        # TODO lazy load
+        return ''.join(map(str, self.messageChain))
 
-    def get(self, type: Type[T]) -> Optional[T]:
+    def get(self, type: Type[G_Text]) -> Optional[G_Text]:
         """
         :return: return the first one, or None
         """
@@ -65,7 +52,7 @@ class Context:
         except:
             return None
 
-    def getExist(self, type: Type[T]) -> T:
+    def getExist(self, type: Type[G_Text]) -> G_Text:
         """
         if not exist, raise AssertionError
         :return: return the first one
@@ -74,10 +61,25 @@ class Context:
         assert ret is not None, f"{type.__name__} don't exist"
         return ret
 
-    def iter(self, type: Type[T]) -> Iterator[T]:
+    def iter(self, type: Type[G_Text]) -> Iterator[G_Text]:
         for text in self.messageChain:
             if isinstance(text, type):
-                yield text  # type 'Never'?
+                yield text
 
-    def getAll(self, type: Type[T]) -> List[T]:
+    def getAll(self, type: Type[G_Text]) -> List[G_Text]:
         return list(self.iter(type))
+
+
+class FriendContext(Context):
+    type: Literal['FriendMessage']
+    sender: FriendSender
+
+
+class GroupContext(Context):
+    type: Literal['GroupMessage']
+    sender: GroupSender
+
+
+class TempContext(Context):
+    type: Literal['TempMessage']
+    sender: TempSender
