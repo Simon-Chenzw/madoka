@@ -74,7 +74,6 @@ class BotBase:
                     except:
                         logger.info(f"get api information failed: {cnt} times")
                         time.sleep(3)
-                        continue
                     else:
                         logger.info(f"api version: {res['data']['version']}")
                         break
@@ -82,6 +81,7 @@ class BotBase:
                     logger.error("Unable to connect to mirai-api-http")
                     raise MadokaInitError(
                         "Unable to connect to mirai-api-http")
+                if cnt: time.sleep(3)
 
         def apiPost(interface: str, **data: Any) -> Dict[str, Any]:
             try:
