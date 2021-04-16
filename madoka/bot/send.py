@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from asyncio import Task
 from typing import Any, Dict, Iterable, Optional, Union
 
 import aiohttp
@@ -19,19 +20,23 @@ class SendUnit(BotBase):
         self,
         interface: str,
         data: Dict[str, Any],
-    ) -> None:
+    ) -> Task[Dict[str, Any]]:
         """
         auto add sessionKey
         :data: will transform to params
         """
-        self.create_task(self.asyncApiGet(interface, data))
+        return self.create_task(self.asyncApiGet(interface, data))
 
-    def apiPost(self, interface: str, data: Dict[str, Any]) -> None:
+    def apiPost(
+        self,
+        interface: str,
+        data: Dict[str, Any],
+    ) -> Task[Dict[str, Any]]:
         """
         auto add sessionKey
         :data: will transform to json
         """
-        self.create_task(self.asyncApiPost(interface, data))
+        return self.create_task(self.asyncApiPost(interface, data))
 
     async def asyncApiGet(
         self,
@@ -78,9 +83,12 @@ class SendUnit(BotBase):
     def sendToAdmin(
         self,
         message: Union[str, Text, Iterable['Text']],
-    ) -> None:
+    ) -> Task[Dict[str, Any]]:
         if self.adminQid:
-            self.sendFriendMessage(target=self.adminQid, message=message)
+            return self.sendFriendMessage(
+                target=self.adminQid,
+                message=message,
+            )
         else:
             raise MadokaRuntimeError('adminQid is not initialized')
 
@@ -88,38 +96,40 @@ class SendUnit(BotBase):
         self,
         message: Union[str, Text, Iterable['Text']],
         quoteId: Optional[int] = None,
-    ) -> None:
+    ) -> Task[Dict[str, Any]]:
         sender = contextStore.get().sender
         if isinstance(sender, FriendSender):
             logger.debug(f"reply to {sender.nickname} {sender.id}")
-            self.sendFriendMessage(
+            return self.sendFriendMessage(
                 target=sender.id,
                 message=message,
                 quote=quoteId,
             )
         elif isinstance(sender, GroupSender):
             logger.debug(f"reply to {sender.memberName} {sender.id}")
-            self.sendGroupMessage(
+            return self.sendGroupMessage(
                 target=sender.group.id,
                 message=message,
                 quote=quoteId,
             )
         elif isinstance(sender, TempSender):
             logger.debug(f"reply to {sender.memberName} {sender.id}")
-            self.sendTempMessage(
+            return self.sendTempMessage(
                 target=sender.id,
                 group=sender.group.id,
                 message=message,
                 quote=quoteId,
             )
+        else:
+            raise MadokaRuntimeError('Unknown Sender Type')
 
     def quoteReply(
         self,
         message: Union[str, Text, Iterable['Text']],
-    ) -> None:
+    ) -> Task[Dict[str, Any]]:
         messageId = contextStore.get().messageId
         logger.debug(f"quote reply to messageId={messageId}")
-        self.reply(
+        return self.reply(
             message=message,
             quoteId=messageId,
         )
@@ -143,7 +153,7 @@ class SendUnit(BotBase):
         target: int,
         message: Union[str, Text, Iterable['Text']],
         quote: Optional[int] = None,
-    ) -> None:
+    ) -> Task[Dict[str, Any]]:
         """
         /sendFriendMessage
         """
@@ -152,14 +162,14 @@ class SendUnit(BotBase):
             "messageChain": self._formatMessage(message),
         }
         if quote: data['quote'] = quote
-        self.apiPost(interface='sendFriendMessage', data=data)
+        return self.apiPost(interface='sendFriendMessage', data=data)
 
     def sendGroupMessage(
         self,
         target: int,
         message: Union[str, Text, Iterable['Text']],
         quote: Optional[int] = None,
-    ) -> None:
+    ) -> Task[Dict[str, Any]]:
         """
         /sendGroupMessage
         """
@@ -168,7 +178,7 @@ class SendUnit(BotBase):
             "messageChain": self._formatMessage(message),
         }
         if quote: data['quote'] = quote
-        self.apiPost(interface='sendGroupMessage', data=data)
+        return self.apiPost(interface='sendGroupMessage', data=data)
 
     def sendTempMessage(
         self,
@@ -176,7 +186,7 @@ class SendUnit(BotBase):
         group: int,
         message: Union[str, Text, Iterable['Text']],
         quote: Optional[int] = None,
-    ) -> None:
+    ) -> Task[Dict[str, Any]]:
         """
         /sendTempMessage
         """
@@ -186,7 +196,7 @@ class SendUnit(BotBase):
             "messageChain": self._formatMessage(message),
         }
         if quote: data['quote'] = quote
-        self.apiPost(interface='sendTempMessage', data=data)
+        return self.apiPost(interface='sendTempMessage', data=data)
 
     async def messageFromId(self, messageId: int) -> Optional[Context]:
         """

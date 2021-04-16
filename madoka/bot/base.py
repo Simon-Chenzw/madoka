@@ -2,7 +2,7 @@ import asyncio
 import logging
 import sys
 import time
-from typing import TYPE_CHECKING, Any, Coroutine, Dict, Optional
+from typing import TYPE_CHECKING, Any, Awaitable, Dict, Optional, TypeVar
 
 import requests
 
@@ -10,6 +10,7 @@ from .exception import MadokaInitError, MadokaRuntimeError
 
 if TYPE_CHECKING:
     from .bot import QQbot
+    T = TypeVar('T')
 
 logger = logging.getLogger('madoka')
 
@@ -44,11 +45,11 @@ class BotBase:
         self._loop = asyncio.get_event_loop()
         return self
 
-    def create_task(self, cor: Coroutine) -> None:
+    def create_task(self, cor: Awaitable[T]) -> asyncio.Task[T]:
         """
         shortcut of `asyncio.get_event_loop().create_task(cor)`
         """
-        self._loop.create_task(cor)
+        return self._loop.create_task(cor)
 
     def __exit__(self, exc_type, exc_value, traceback) -> bool:
         self._releaseSession()
