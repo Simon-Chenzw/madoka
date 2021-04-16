@@ -28,7 +28,7 @@ class MessageUnit(BotBase):
     async def _messageReceiver(self) -> None:
         logger.info("listening message")
         async with websockets.connect(
-                f"ws://{self._socket}/message?sessionKey={self._session}"
+                f"{self._ws_protocol}://{self._socket}/message?sessionKey={self._session}"
         ) as websocket:
             async for message in websocket:
                 # TODO use Queue to track future
@@ -62,7 +62,7 @@ class EventUnit(BotBase):
     async def _eventReceiver(self) -> None:
         logger.info("listening event")
         async with websockets.connect(
-                f"ws://{self._socket}/event?sessionKey={self._session}"
+                f"{self._ws_protocol}://{self._socket}/event?sessionKey={self._session}"
         ) as websocket:
             async for message in websocket:
                 self.create_task(self._eventSolve(message))

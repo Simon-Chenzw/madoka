@@ -51,7 +51,7 @@ class SendUnit(BotBase):
         data['sessionKey'] = self._session
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                    f"http://{self._socket}/{interface}",
+                    f"{self._protocol}://{self._socket}/{interface}",
                     params=data,
             ) as resp:
                 js = await resp.json()
@@ -71,7 +71,7 @@ class SendUnit(BotBase):
         data['sessionKey'] = self._session
         async with aiohttp.ClientSession() as session:
             async with session.post(
-                    f"http://{self._socket}/{interface}",
+                    f"{self._protocol}://{self._socket}/{interface}",
                     json=data,
             ) as resp:
                 js = await resp.json()

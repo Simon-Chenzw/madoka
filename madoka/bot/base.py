@@ -2,7 +2,7 @@ import asyncio
 import logging
 import sys
 import time
-from typing import TYPE_CHECKING, Any, Awaitable, Dict, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Awaitable, Dict, Optional, TypeVar, Literal
 
 import requests
 
@@ -27,6 +27,8 @@ class BotBase:
         bot: 'QQbot',
         adminQid: Optional[int] = None,
         waitMirai: Optional[int] = None,
+        protocol: Literal['http', 'https'] = 'http',
+        ws_protocol: Literal['ws', 'wss'] = 'ws',
     ) -> None:
         super().__init__()
         self.qid = qid
@@ -34,6 +36,8 @@ class BotBase:
         self._socket = socket
         self._authKey = authKey
         self._waitMirai = waitMirai
+        self._protocol = protocol
+        self._ws_protocol = ws_protocol
         # self._bot just use for typing hinting
         self._bot = bot
 
@@ -61,7 +65,8 @@ class BotBase:
             cnt = 0
             if self._waitMirai is None:
                 try:
-                    res = requests.get(f"http://{self._socket}/about").json()
+                    res = requests.get(
+                        f"{self._protocol}://{self._socket}/about").json()
                     logger.info(f"api version: {res['data']['version']}")
                 except:
                     logger.error("Unable to connect to mirai-api-http")
@@ -72,7 +77,7 @@ class BotBase:
                     try:
                         cnt += 1
                         res = requests.get(
-                            f"http://{self._socket}/about").json()
+                            f"{self._protocol}://{self._socket}/about").json()
                     except:
                         logger.info(f"get api information failed: {cnt} times")
                         time.sleep(3)
@@ -88,7 +93,7 @@ class BotBase:
         def apiPost(interface: str, **data: Any) -> Dict[str, Any]:
             try:
                 res = requests.post(
-                    url=f"http://{self._socket}/{interface}",
+                    url=f"{self._protocol}://{self._socket}/{interface}",
                     json=data,
                 ).json()
                 if res['code']:
@@ -127,7 +132,7 @@ class BotBase:
     def _releaseSession(self) -> None:
         try:
             res = requests.post(
-                url=f"http://{self._socket}/release",
+                url=f"{self._protocol}://{self._socket}/release",
                 json={
                     "sessionKey": self._session,
                     "qq": self.qid,
