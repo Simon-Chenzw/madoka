@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from asyncio import Task
-from typing import Any, Dict, Iterable, Optional, Union
+from typing import Any, Dict, Iterable, List, Optional, Union
 
 import aiohttp
 
@@ -135,7 +135,7 @@ class SendUnit(BotBase):
         )
 
     @staticmethod
-    def _formatMessage(message: Union[str, Text, Iterable['Text']]) -> Any:
+    def _formatMessage(message: Union[str, Text, Iterable['Text']]) -> List[Dict[str,Any]]:
         if isinstance(message, str):
             return [PlainText(message).dict()]
         elif isinstance(message, Text):
