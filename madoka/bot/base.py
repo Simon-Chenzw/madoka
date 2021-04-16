@@ -24,22 +24,35 @@ class BotBase:
         qid: int,
         socket: str,
         authKey: str,
-        bot: 'QQbot',
         adminQid: Optional[int] = None,
+        autoRegister: bool = True,
         waitMirai: Optional[int] = None,
+        messageReception: bool = True,
         protocol: Literal['http', 'https'] = 'http',
         ws_protocol: Literal['ws', 'wss'] = 'ws',
     ) -> None:
-        super().__init__()
+        """
+        :qid: Bot's QQ
+        :socket: ip & port
+        :authKey: mirai-api-http authKey
+        :messageReception: activate message reception
+        :autoRegister: automatically add all registered function
+        :waitMirai: Retry after connection failure during initialization, Zero means infinity, None means None.
+        """
         self.qid = qid
-        self.adminQid = adminQid
         self._socket = socket
         self._authKey = authKey
+
+        self.adminQid = adminQid
+        self._autoRegister = autoRegister
         self._waitMirai = waitMirai
+        self._messageReception = messageReception
+
         self._protocol = protocol
         self._ws_protocol = ws_protocol
+
         # self._bot just use for typing hinting
-        self._bot = bot
+        self._bot: 'QQbot' = self  # type: ignore
 
     def __enter__(self) -> 'BotBase':
         if sys.version_info.minor < 8:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Optional
+from typing import Literal, Optional
 
 from websockets import ConnectionClosedError
 
@@ -17,35 +17,6 @@ logger = logging.getLogger('madoka')
 
 # TODO and plugin util: support reload
 class QQbot(ReceiveUnit, SendUnit, ScheduleUnit):
-    def __init__(
-        self,
-        qid: int,
-        socket: str,
-        authKey: str,
-        messageReception: bool = True,
-        autoRegister: bool = True,
-        adminQid: Optional[int] = None,
-        waitMirai: Optional[int] = None,
-    ) -> None:
-        """
-        :qid: Bot's QQ
-        :socket: ip & port
-        :authKey: mirai-api-http authKey
-        :messageReception: activate message reception
-        :autoRegister: automatically add all registered function
-        :waitMirai: Retry after connection failure during initialization, Zero means infinity, None means None.
-        """
-        super().__init__(
-            qid=qid,
-            socket=socket,
-            authKey=authKey,
-            bot=self,
-            adminQid=adminQid,
-            waitMirai=waitMirai,
-        )
-        self._autoRegister = autoRegister
-        self.messageReception = messageReception
-
     def __enter__(self) -> 'QQbot':
         try:
             logger.info(f"bot start: QQ={self.qid}")
@@ -99,7 +70,7 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit):
     async def _main(self):
         logger.info("bot start working")
         try:
-            if self.messageReception:
+            if self._messageReception:
                 self._mainTask = asyncio.gather(
                     self._receiver(),
                     self._schedule(),
