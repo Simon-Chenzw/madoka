@@ -50,7 +50,7 @@ class BotBase:
         self._loop = asyncio.get_event_loop()
         return self
 
-    def create_task(self, cor: Awaitable[T]) -> asyncio.Task[T]:
+    def create_task(self, cor: Awaitable[T]) -> Awaitable[T]:
         """
         shortcut of `asyncio.get_event_loop().create_task(cor)`
         """

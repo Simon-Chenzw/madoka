@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import logging
-from asyncio import Task
-from typing import Any, Dict, Iterable, List, Optional, Union
+from typing import Any, Awaitable, Dict, Iterable, List, Optional, Union
 
 import aiohttp
 
@@ -20,7 +19,7 @@ class SendUnit(BotBase):
         self,
         interface: str,
         data: Dict[str, Any],
-    ) -> Task[Dict[str, Any]]:
+    ) -> Awaitable[Dict[str, Any]]:
         """
         auto add sessionKey
         :data: will transform to params
@@ -31,7 +30,7 @@ class SendUnit(BotBase):
         self,
         interface: str,
         data: Dict[str, Any],
-    ) -> Task[Dict[str, Any]]:
+    ) -> Awaitable[Dict[str, Any]]:
         """
         auto add sessionKey
         :data: will transform to json
@@ -83,7 +82,7 @@ class SendUnit(BotBase):
     def sendToAdmin(
         self,
         message: Union[str, Text, Iterable['Text']],
-    ) -> Task[Dict[str, Any]]:
+    ) -> Awaitable[Dict[str, Any]]:
         if self.adminQid:
             return self.sendFriendMessage(
                 target=self.adminQid,
@@ -96,7 +95,7 @@ class SendUnit(BotBase):
         self,
         message: Union[str, Text, Iterable['Text']],
         quoteId: Optional[int] = None,
-    ) -> Task[Dict[str, Any]]:
+    ) -> Awaitable[Dict[str, Any]]:
         sender = contextStore.get().sender
         if isinstance(sender, FriendSender):
             logger.debug(f"reply to {sender.nickname} {sender.id}")
@@ -126,7 +125,7 @@ class SendUnit(BotBase):
     def quoteReply(
         self,
         message: Union[str, Text, Iterable['Text']],
-    ) -> Task[Dict[str, Any]]:
+    ) -> Awaitable[Dict[str, Any]]:
         messageId = contextStore.get().messageId
         logger.debug(f"quote reply to messageId={messageId}")
         return self.reply(
@@ -135,7 +134,9 @@ class SendUnit(BotBase):
         )
 
     @staticmethod
-    def _formatMessage(message: Union[str, Text, Iterable['Text']]) -> List[Dict[str,Any]]:
+    def _formatMessage(
+            message: Union[str, Text,
+                           Iterable['Text']]) -> List[Dict[str, Any]]:
         if isinstance(message, str):
             return [PlainText(message).dict()]
         elif isinstance(message, Text):
@@ -153,7 +154,7 @@ class SendUnit(BotBase):
         target: int,
         message: Union[str, Text, Iterable['Text']],
         quote: Optional[int] = None,
-    ) -> Task[Dict[str, Any]]:
+    ) -> Awaitable[Dict[str, Any]]:
         """
         /sendFriendMessage
         """
@@ -169,7 +170,7 @@ class SendUnit(BotBase):
         target: int,
         message: Union[str, Text, Iterable['Text']],
         quote: Optional[int] = None,
-    ) -> Task[Dict[str, Any]]:
+    ) -> Awaitable[Dict[str, Any]]:
         """
         /sendGroupMessage
         """
@@ -186,7 +187,7 @@ class SendUnit(BotBase):
         group: int,
         message: Union[str, Text, Iterable['Text']],
         quote: Optional[int] = None,
-    ) -> Task[Dict[str, Any]]:
+    ) -> Awaitable[Dict[str, Any]]:
         """
         /sendTempMessage
         """
