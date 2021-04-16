@@ -10,7 +10,8 @@ from .exception import MadokaInitError, MadokaRuntimeError
 
 if TYPE_CHECKING:
     from .bot import QQbot
-    T = TypeVar('T')
+
+T = TypeVar('T')
 
 logger = logging.getLogger('madoka')
 
