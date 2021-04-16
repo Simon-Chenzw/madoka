@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Literal, Optional
+from typing import Awaitable, List, Optional
 
 from websockets import ConnectionClosedError
 
@@ -40,9 +40,15 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit):
             logger.info(f"QQbot exit: qid={self.qid}")
         return catch
 
-    def working(self) -> None:
+    def working(
+        self,
+        main_task: Optional[Awaitable] = None,
+        enable_receiver: bool = False,
+        enable_schedule: bool = False,
+    ) -> None:
         """
-        start working
+        start working, will blocking forever unless revceiver==schedule==False
+        :main_task: Coroutine that need to be executed at the same time
         """
         # TODO More detail
         if self._autoRegister:
@@ -53,9 +59,14 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit):
             for func, schedule in timed.getRegistered():
                 self.addTimedTask(func, schedule)
 
+        lst = []
+        if main_task is not None: lst.append(main_task)
+        if enable_receiver: lst.append(self._receiver())
+        if enable_schedule: lst.append(self._schedule())
+
         # event loop
         try:
-            self._loop.run_until_complete(self._main())
+            self._loop.run_until_complete(self._main(lst))
         except KeyboardInterrupt:
             self.stop()
         finally:
@@ -67,16 +78,12 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit):
         logger.info("stopping the bot")
         self._mainTask.cancel()
 
-    async def _main(self):
+    async def _main(self, gather_list: List[Awaitable]):
         logger.info("bot start working")
+        if len(gather_list) == 0:
+            raise MadokaRuntimeError('Nothing to do')
         try:
-            if self._messageReception:
-                self._mainTask = asyncio.gather(
-                    self._receiver(),
-                    self._schedule(),
-                )
-            else:
-                self._mainTask = asyncio.ensure_future(self._schedule())
+            self._mainTask = asyncio.gather(*gather_list)
             await self._mainTask
         except asyncio.CancelledError:
             logger.debug("main task cancelled")

@@ -27,7 +27,6 @@ class BotBase:
         adminQid: Optional[int] = None,
         autoRegister: bool = True,
         waitMirai: Optional[int] = None,
-        messageReception: bool = True,
         protocol: Literal['http', 'https'] = 'http',
         ws_protocol: Literal['ws', 'wss'] = 'ws',
     ) -> None:
@@ -46,7 +45,6 @@ class BotBase:
         self.adminQid = adminQid
         self._autoRegister = autoRegister
         self._waitMirai = waitMirai
-        self._messageReception = messageReception
 
         self._protocol = protocol
         self._ws_protocol = ws_protocol
