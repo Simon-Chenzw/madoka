@@ -108,7 +108,7 @@ class PlainText(Text):
     type: Literal['Plain']
     text: str
 
-    def __init__(self, text: str, type: str = 'Plain') -> None:
+    def __init__(self, text: str, type: Literal['Plain'] = 'Plain') -> None:
         super().__init__(type=type, text=text)
 
     def __str__(self) -> str:
@@ -116,22 +116,22 @@ class PlainText(Text):
 
 
 class ImageText(Text):
-    # TODO test
     type: Literal['Image']
-    imageId: str
-    url: str
+    imageId: Optional[str]
+    url: Optional[str]
     path: Optional[str]
 
-    # TODO
-    # def __init__(
-    #     self,
-    #     path: Optional[str] = None,
-    #     url: Optional[str] = None,
-    # ) -> None:
-    #     """
-    #     :path: Need to be a relative path
-    #     """
-    #     super().__init__(path=path, url=url)
+    def __init__(
+        self,
+        path: Optional[str] = None,
+        url: Optional[str] = None,
+        imageId: Optional[str] = None,
+        type: Literal['Image'] = 'Image',
+    ) -> None:
+        """
+        :path: Need to be a relative path
+        """
+        super().__init__(path=path, url=url, imageId=imageId, type=type)
 
 
 class FlashImageText(ImageText):
