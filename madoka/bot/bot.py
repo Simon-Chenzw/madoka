@@ -43,8 +43,8 @@ class QQbot(ReceiveUnit, SendUnit, ScheduleUnit):
     def working(
         self,
         main_task: Optional[Awaitable] = None,
-        enable_receiver: bool = False,
-        enable_schedule: bool = False,
+        enable_receiver: bool = True,
+        enable_schedule: bool = True,
     ) -> None:
         """
         start working, will blocking forever unless revceiver==schedule==False
