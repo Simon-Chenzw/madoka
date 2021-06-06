@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import typing
-from typing import Dict, List, Literal, Optional, Type
+from typing import Literal, Optional, Type, get_args, get_origin
 
 from pydantic import BaseModel  # pylint: disable=no-name-in-module
 
@@ -16,7 +15,7 @@ class Text(BaseModel, extra='forbid'):
     type: str
 
     class TypeMap:
-        types: Dict[str, Type[Text]] = {}
+        types: dict[str, Type[Text]] = {}
         extra: Type[Text]
 
         @classmethod
@@ -34,10 +33,10 @@ class Text(BaseModel, extra='forbid'):
         cls: Type[Text],
         **kwargs,
     ) -> None:
-        if 'type' in cls.__fields__ and typing.get_origin(
+        if 'type' in cls.__fields__ and get_origin(
                 cls.__fields__['type'].type_) is Literal:
             cls.TypeMap.add(
-                typing.get_args(cls.__fields__['type'].type_)[0],
+                get_args(cls.__fields__['type'].type_)[0],
                 cls,
             )
         elif cls.__name__ == 'ExtraText':
@@ -73,7 +72,7 @@ class QuoteText(Text):
     groupId: int
     senderId: int
     targetId: int
-    origin: List[Text]
+    origin: list[Text]
 
     @property
     def originText(self) -> str:

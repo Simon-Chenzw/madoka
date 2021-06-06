@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-from typing import Iterator, List, Literal, Optional, Type, TypeVar
+from typing import Iterator, Literal, Optional, Type, TypeVar, get_args, get_origin
 
 from pydantic import BaseModel  # pylint: disable=no-name-in-module
 
-from .sender import FriendSender, GroupSender, Sender, TempSender
+from .sender import (FriendSender, GroupSender, OtherClientSender, Sender,
+                     StrangerSender, TempSender)
 from .text import SourceText, Text
 
-G_Text = TypeVar('G_Text', bound=Text)
+T_Text = TypeVar('T_Text', bound=Text)
 
 
 class Context(BaseModel, extra='forbid'):
@@ -17,20 +18,21 @@ class Context(BaseModel, extra='forbid'):
     :params: Used for type checking, but Text should not be instantiated
     """
 
-    type: Literal['FriendMessage', 'GroupMessage', 'TempMessage']
-    messageChain: List[Text]
+    type: str
+    messageChain: list[Text]
     sender: Sender
+
+    class TypeMap:
+        types: dict[str, Type[Context]] = {}
+
+    def __init_subclass__(cls: Type[Context], **kwargs) -> None:
+        assert get_origin(cls.__fields__['type'].type_) is Literal
+        cls.TypeMap.types[get_args(cls.__fields__['type'].type_)[0]] = cls
+        return super().__init_subclass__(**kwargs)
 
     def __new__(cls, *args, **kwargs) -> Type[Context]:
         if cls is Context:
-            if kwargs['type'] == 'FriendMessage':
-                return super().__new__(FriendContext)
-            elif kwargs['type'] == 'GroupMessage':
-                return super().__new__(GroupContext)
-            elif kwargs['type'] == 'TempMessage':
-                return super().__new__(TempContext)
-            else:
-                raise ValueError("Error Context type")
+            return super().__new__(cls.TypeMap.types[kwargs['type']])
         else:
             return super().__new__(cls)
 
@@ -43,7 +45,7 @@ class Context(BaseModel, extra='forbid'):
         # TODO lazy load
         return ''.join(map(str, self.messageChain))
 
-    def get(self, type: Type[G_Text]) -> Optional[G_Text]:
+    def get(self, type: Type[T_Text]) -> Optional[T_Text]:
         """
         :return: return the first one, or None
         """
@@ -52,7 +54,7 @@ class Context(BaseModel, extra='forbid'):
         except:
             return None
 
-    def getExist(self, type: Type[G_Text]) -> G_Text:
+    def getExist(self, type: Type[T_Text]) -> T_Text:
         """
         if not exist, raise AssertionError
         :return: return the first one
@@ -61,12 +63,12 @@ class Context(BaseModel, extra='forbid'):
         assert ret is not None, f"{type.__name__} don't exist"
         return ret
 
-    def iter(self, type: Type[G_Text]) -> Iterator[G_Text]:
+    def iter(self, type: Type[T_Text]) -> Iterator[T_Text]:
         for text in self.messageChain:
             if isinstance(text, type):
                 yield text
 
-    def getAll(self, type: Type[G_Text]) -> List[G_Text]:
+    def getAll(self, type: Type[T_Text]) -> list[T_Text]:
         return list(self.iter(type))
 
 
@@ -83,3 +85,13 @@ class GroupContext(Context):
 class TempContext(Context):
     type: Literal['TempMessage']
     sender: TempSender
+
+
+class StrangerContext(Context):
+    type: Literal['StrangerMessage']
+    sender: StrangerSender
+
+
+class OtherClientContext(Context):
+    type: Literal['OtherClientMessage']
+    sender: OtherClientSender

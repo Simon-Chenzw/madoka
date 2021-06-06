@@ -1,161 +1,134 @@
+from __future__ import annotations
+
 import asyncio
+import json
 import logging
-import sys
-import time
-from typing import TYPE_CHECKING, Any, Awaitable, Dict, Optional, TypeVar, Literal
+from itertools import count
+from typing import (TYPE_CHECKING, Any, AsyncGenerator, Coroutine, Literal,
+                    Optional)
 
-import requests
-
-from .exception import MadokaInitError, MadokaRuntimeError
+from websockets.exceptions import ConnectionClosedError
+from websockets.legacy import client
 
 if TYPE_CHECKING:
     from .bot import QQbot
 
-T = TypeVar('T')
+logger = logging.getLogger(__name__)
 
-logger = logging.getLogger('madoka')
-
-# TODO autologin & offline detect
+MAX_QUEUE_SIZE = 10000
 
 
 class BotBase:
     def __init__(
         self,
         qid: int,
-        socket: str,
-        authKey: str,
+        host: str,
+        verifyKey: str,
         adminQid: Optional[int] = None,
-        autoRegister: bool = True,
         waitMirai: Optional[int] = None,
-        protocol: Literal['http', 'https'] = 'http',
-        ws_protocol: Literal['ws', 'wss'] = 'ws',
+        channel: Literal['message', 'event', 'all'] = 'all',
+        protocol: Literal['ws', 'wss'] = 'ws',
+        reservedSyncId: int = -1,
     ) -> None:
-        """
-        :qid: Bot's QQ
-        :socket: ip & port
-        :authKey: mirai-api-http authKey
-        :messageReception: activate message reception
-        :autoRegister: automatically add all registered function
-        :waitMirai: Retry after connection failure during initialization, Zero means infinity, None means None.
-        """
         self.qid = qid
-        self._socket = socket
-        self._authKey = authKey
-
         self.adminQid = adminQid
-        self._autoRegister = autoRegister
         self._waitMirai = waitMirai
+        self._reservedSyncId = str(reservedSyncId)
+        self._wsurl = f"{protocol}://{host}/{channel}?verifyKey={verifyKey}&qq={qid}"
 
-        self._protocol = protocol
-        self._ws_protocol = ws_protocol
+        self._curSyncId = count()
+        self._futures: dict[str, asyncio.Future[dict[str, Any]]] = {}
+        self._tasks: list[asyncio.Task] = []
 
         # self._bot just use for typing hinting
-        self._bot: 'QQbot' = self  # type: ignore
+        self._bot: QQbot = self  # type: ignore
 
-    def __enter__(self) -> 'BotBase':
-        if sys.version_info.minor < 8:
-            logger.error('Wrong python version, requires python>=3.8')
-            raise MadokaInitError("Requires python version >= 3.8")
-        self._getSession()
-        logger.debug("get event loop")
-        self._loop = asyncio.get_event_loop()
+    async def __aenter__(self) -> BotBase:
+        logger.info("Connect to Websocket Adapter")
+        await self._wsconnect()
+        self._session = json.loads(await self._ws.recv())['data']['session']
+        logger.info(f"successfully connect: sessionKey={self._session}")
         return self
 
-    def create_task(self, cor: Awaitable[T]) -> Awaitable[T]:
-        """
-        shortcut of `asyncio.get_event_loop().create_task(cor)`
-        """
-        return self._loop.create_task(cor)
-
-    def __exit__(self, exc_type, exc_value, traceback) -> bool:
-        self._releaseSession()
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> bool:
+        logger.info("Disconnect to Websocket Adapter")
+        await self._ws.close()
         return False
 
-    def _getSession(self) -> None:
-        def checkApi() -> None:
-            cnt = 0
-            if self._waitMirai is None:
-                try:
-                    res = requests.get(
-                        f"{self._protocol}://{self._socket}/about").json()
-                    logger.info(f"api version: {res['data']['version']}")
-                except:
-                    logger.error("Unable to connect to mirai-api-http")
-                    raise MadokaInitError(
-                        "Unable to connect to mirai-api-http")
-            else:
-                while not (cnt and cnt == self._waitMirai):
-                    try:
-                        cnt += 1
-                        res = requests.get(
-                            f"{self._protocol}://{self._socket}/about").json()
-                    except:
-                        logger.info(f"get api information failed: {cnt} times")
-                        time.sleep(3)
-                    else:
-                        logger.info(f"api version: {res['data']['version']}")
-                        break
+    async def _wsconnect(self) -> None:
+        self._connect = client.Connect(self._wsurl)
+        if self._waitMirai is None:
+            self._waitMirai = 1
+        cnt = 0
+        while not (cnt and cnt == self._waitMirai):
+            try:
+                cnt += 1
+                self._ws = await self._connect
+            except:
+                if self._waitMirai != 1:
+                    logger.info(f"get api information failed: {cnt} times")
+                if cnt != self._waitMirai:
+                    await asyncio.sleep(3)
                 else:
                     logger.error("Unable to connect to mirai-api-http")
-                    raise MadokaInitError(
-                        "Unable to connect to mirai-api-http")
-                if cnt: time.sleep(3)
+                    raise
+            else:
+                if cnt != 1: await asyncio.sleep(3)
+                break
 
-        def apiPost(interface: str, **data: Any) -> Dict[str, Any]:
-            try:
-                res = requests.post(
-                    url=f"{self._protocol}://{self._socket}/{interface}",
-                    json=data,
-                ).json()
-                if res['code']:
-                    code = res['code']
-                    msg = res.get('msg', 'unknown')
-                    logger.error(f'{interface} failed: {code=} {msg=}')
-                    raise MadokaInitError(f'{interface} failed')
-            except Exception as err:
-                logger.error(
-                    f'{interface} failed: <{err.__class__.__name__}> {err}')
-                raise MadokaInitError(f'{interface} failed')
-            logger.debug(f'{interface} success')
-            return res
+    def send(
+        self,
+        command: str,
+        subCommand: Optional[str],
+        content: dict[str, Any],
+    ) -> asyncio.Future[dict[str, Any]]:
+        syncId = str(next(self._curSyncId))
+        data = json.dumps({
+            "syncId": syncId,
+            "command": command,
+            "subCommand": subCommand,
+            "content": content
+        })
+        logger.info(f"[{command}] {subCommand}: {content}")
+        self._futures[syncId] = asyncio.Future()
+        asyncio.create_task(self._ws.send(data))
+        return self._futures[syncId]
 
+    async def _recv(self) -> AsyncGenerator[dict[str, Any], None]:
+        logger.info("Start receiving")
+        while True:
+            resp = json.loads(await self._ws.recv())
+            logger.debug(f"Received: {resp=}")
+            syncId: str = resp['syncId']
+            data: dict[str, Any] = resp['data']
+            if syncId == self._reservedSyncId:
+                logger.info(f"Received Post: {data=}")
+                yield data
+            else:
+                if syncId in self._futures:
+                    logger.info(f"Received result: {syncId=} {data=}")
+                    self._futures[syncId].set_result(data)
+                    del self._futures[syncId]
+                else:
+                    logger.debug(f"Ignore result: {syncId=} {data=}")
+
+    def _startTask(self, cor: Coroutine[None, None, None]) -> asyncio.Task:
+        task = asyncio.create_task(cor)
+        self._tasks.append(task)
+        return task
+
+    async def wait(self) -> None:
+        logger.debug("Wating for all tasks")
         try:
-            # check api connection
-            checkApi()
-            # auth
-            self._session = apiPost('auth', authKey=self._authKey)['session']
-            # verify
-            apiPost('verify', sessionKey=self._session, qq=self.qid)
-            # set config
-            apiPost(
-                'config',
-                sessionKey=self._session,
-                cacheSize=4096,
-                enableWebsocket=True,
-            )
-            logger.info(
-                f"successfully authenticate: sessionKey={self._session}")
-        except MadokaInitError:
-            raise
-        except:
-            raise MadokaInitError("Can't get sessionKey")
+            await asyncio.gather(*self._tasks)
+        except asyncio.CancelledError:
+            logger.info("Task cancelled")
+        except ConnectionClosedError:
+            logger.error(f"websockets connection closed")
+            raise RuntimeError("websockets connection closed") from None
+        logger.info("Wait end")
 
-    def _releaseSession(self) -> None:
-        try:
-            res = requests.post(
-                url=f"{self._protocol}://{self._socket}/release",
-                json={
-                    "sessionKey": self._session,
-                    "qq": self.qid,
-                },
-            ).json()
-            if res['code']:
-                code = res['code']
-                msg = res.get('msg', 'unknown')
-                logger.error(f'release sessionKey failed: {code=} {msg=}')
-                raise MadokaRuntimeError('release sessionKey failed') from None
-        except:
-            logger.exception(f'release sessionKey failed:')
-            raise MadokaRuntimeError('release sessionKey failed')
-        else:
-            logger.info(f"Successful release")
+    def stop(self) -> None:
+        logger.info(f"Stoping Bot {self.qid}")
+        for task in self._tasks:
+            task.cancel()

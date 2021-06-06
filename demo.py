@@ -1,45 +1,33 @@
 import asyncio
 import logging
-import sys
 
 from madoka import QQbot
-from madoka.register import register, timedRegister, runOnce
 from madoka.filter import isAdmin, isGroupMessage, isText
 from madoka.typing import Context
 
-if 'debug' in sys.argv:
-    logging.getLogger().setLevel(logging.DEBUG)
-else:
-    logging.getLogger().setLevel(logging.INFO)
+logging.basicConfig(level=logging.INFO, format="%(message)s")
 
-logger = logging.getLogger('madoka')
+logger = logging.getLogger(__name__)
+
+bot = QQbot(123456, "127.0.0.1:80", "verifyKey", adminQid=12345)
 
 
-@timedRegister(runOnce())
+@bot.runOnce()
 def helloworld(bot: QQbot):
     bot.sendToAdmin(message='奇跡も、魔法も、あるんだよ', )
 
 
-@register((isAdmin(True) | ~isGroupMessage) & isText('ping'))
+@bot.addFunction((isAdmin | ~isGroupMessage) & isText('^ping$'))
 def ping(bot: QQbot, context: Context) -> None:
     logger.info(f"ping from {context.sender.id}")
     bot.reply('pong')
 
 
-@register(isAdmin(True) & isText('stop'))
+@bot.addFunction(isAdmin & isText('^stop$'))
 async def stop(bot: QQbot, context: Context) -> None:
     bot.reply('Madoka will stop')
     await asyncio.sleep(3)
     bot.stop()
 
 
-try:
-    with QQbot(
-            qid=12345,
-            adminQid=123456,
-            socket="127.0.0.1:1080",
-            authKey="authKey",
-    ) as bot:
-        bot.working()
-except Exception as err:
-    print(err.__class__.__name__, err)
+bot.simple_running()

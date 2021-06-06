@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import typing
-from typing import Dict, List, Literal, Optional, Type
+from typing import Literal, Type, get_args, get_origin
 
 from pydantic import BaseModel  # pylint: disable=no-name-in-module
 
@@ -16,7 +15,7 @@ class Event(BaseModel, extra='forbid'):
     type: str
 
     class TypeMap:
-        types: Dict[str, Type[Event]] = {}
+        types: dict[str, Type[Event]] = {}
         extra: Type[Event]
 
         @classmethod
@@ -30,14 +29,11 @@ class Event(BaseModel, extra='forbid'):
         def get(cls, name: str) -> Type[Event]:
             return cls.types.get(name, cls.extra)
 
-    def __init_subclass__(
-        cls: Type[Event],
-        **kwargs,
-    ) -> None:
-        if 'type' in cls.__fields__ and typing.get_origin(
+    def __init_subclass__(cls: Type[Event], **kwargs) -> None:
+        if 'type' in cls.__fields__ and get_origin(
                 cls.__fields__['type'].type_) is Literal:
             cls.TypeMap.add(
-                typing.get_args(cls.__fields__['type'].type_)[0],
+                get_args(cls.__fields__['type'].type_)[0],
                 cls,
             )
         elif cls.__name__ == 'ExtraEvent':

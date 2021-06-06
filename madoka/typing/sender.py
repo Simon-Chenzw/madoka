@@ -1,10 +1,6 @@
-from typing import Literal, Union
+from typing import Literal
 
 from pydantic import BaseModel  # pylint: disable=no-name-in-module
-
-Sender = Union['FriendSender', 'GroupSender', 'TempSender']
-
-# TODO: rename Sender to User, for typing in Event (wait for mirai-api-http 2.0)
 
 
 class GroupInfo(BaseModel):
@@ -13,7 +9,7 @@ class GroupInfo(BaseModel):
     permission: Literal['OWNER', 'ADMINISTRATOR', 'MEMBER']
 
 
-class SenderBase(BaseModel, extra='forbid'):
+class Sender(BaseModel, extra='forbid'):
     """
     can't auto choice subclass when instantiating
     SenderBase should not be instantiated
@@ -21,18 +17,35 @@ class SenderBase(BaseModel, extra='forbid'):
     id: int
 
 
-class FriendSender(SenderBase):
+class FriendSender(Sender):
     nickname: str
     remark: str
 
 
-class GroupSender(SenderBase):
+class GroupSender(Sender):
     memberName: str
+    specialTitle: str
     permission: Literal['OWNER', 'ADMINISTRATOR', 'MEMBER']
+    joinTimestamp: int
+    lastSpeakTimestamp: int
+    muteTimeRemaining: int
     group: GroupInfo
 
 
-class TempSender(SenderBase):
+class TempSender(Sender):
     memberName: str
+    specialTitle: str
     permission: Literal['OWNER', 'ADMINISTRATOR', 'MEMBER']
+    joinTimestamp: int
+    lastSpeakTimestamp: int
+    muteTimeRemaining: int
     group: GroupInfo
+
+
+class StrangerSender(Sender):
+    nickname: str
+    remark: str
+
+
+class OtherClientSender(Sender):
+    platform: str

@@ -1,128 +1,136 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Union, Type
+import re
+from typing import TYPE_CHECKING, Callable, Type, Union
 
-from .typing import AtText, Context, FriendSender, GroupSender, TempSender, Text
+from .typing import AtText, Context, GroupSender, TempSender, Text
 
 if TYPE_CHECKING:
     from .bot import QQbot
-    from .typing.frame import contextCheckFunc
 
 
 class Censor:
-    def __init__(self, check: contextCheckFunc) -> None:
+    def __init__(self, check: Callable[[QQbot, Context], bool]) -> None:
         self.check = check
 
-    def __call__(self, bot: QQbot, context: Context) -> bool:
-        return self.check(bot, context)
+    def __call__(self, bot: QQbot, ctx: Context) -> bool:
+        return self.check(bot, ctx)
 
     def __eq__(self, rhs: Censor) -> Censor:
-        return Censor(lambda bot, context: self.check(bot, context) == rhs.
-                      check(bot, context))
+        return Censor(lambda bot, ctx: self(bot, ctx) == rhs(bot, ctx))
 
     def __nq__(self, rhs: Censor) -> Censor:
-        return Censor(lambda bot, context: self.check(bot, context) != rhs.
-                      check(bot, context))
+        return Censor(lambda bot, ctx: self(bot, ctx) != rhs(bot, ctx))
 
     def __and__(self, rhs: Censor) -> Censor:
-        return Censor(lambda bot, context: self.check(bot, context) and rhs.
-                      check(bot, context))
+        return Censor(lambda bot, ctx: self(bot, ctx) and rhs(bot, ctx))
 
     def __or__(self, rhs: Censor) -> Censor:
-        return Censor(lambda bot, context: self.check(bot, context) or rhs.
-                      check(bot, context))
+        return Censor(lambda bot, ctx: self(bot, ctx) or rhs(bot, ctx))
 
     def __invert__(self) -> Censor:
-        return Censor(lambda bot, context: not self.check(bot, context))
+        return Censor(lambda bot, ctx: not self(bot, ctx))
 
 
-isFriendMessage = Censor(
-    lambda bot, context: isinstance(context.sender, FriendSender))
-isGroupMessage = Censor(
-    lambda bot, context: isinstance(context.sender, GroupSender))
-isTempMessage = Censor(
-    lambda bot, context: isinstance(context.sender, TempSender))
-
-
-def isAdmin(
-    inGroup: bool = False,
-    fromGroup: bool = False,
+def isMessage(
+    isFriend: bool = True,
+    isGroup: bool = True,
+    isTemp: bool = True,
 ) -> Censor:
-    def check(bot: QQbot, context: Context) -> bool:
-        if bot.adminQid:
-            if isinstance(context.sender, FriendSender):
-                return context.sender.id == bot.adminQid
-            elif inGroup and isinstance(context.sender, GroupSender):
-                return context.sender.id == bot.adminQid
-            elif fromGroup and isinstance(context.sender, TempSender):
-                return context.sender.id == bot.adminQid
-        return False
+    def check(bot: QQbot, ctx: Context) -> bool:
+        if ctx.type == "FriendMessage":
+            return isFriend
+        elif ctx.type == "GroupMessage":
+            return isGroup
+        elif ctx.type == "TempMessage":
+            return isTemp
+        else:
+            return False
 
     return Censor(check)
 
 
-def isPerson(
-    id: Union[int, List[int]],
-    inGroup: bool = False,
-    fromGroup: bool = False,
-) -> Censor:
-    if isinstance(id, int):
-        id = [id]
-
-    def check(bot: QQbot, context: Context) -> bool:
-        if isinstance(context.sender, FriendSender):
-            return context.sender.id in id
-        elif inGroup and isinstance(context.sender, GroupSender):
-            return context.sender.id in id
-        elif fromGroup and isinstance(context.sender, TempSender):
-            return context.sender.id in id
-        return False
-
-    return Censor(check)
+isFriendMessage = Censor(lambda bot, ctx: ctx.type == "FriendMessage")
+isGroupMessage = Censor(lambda bot, ctx: ctx.type == "GroupMessage")
+isTempMessage = Censor(lambda bot, ctx: ctx.type == "TempMessage")
 
 
-def isGroup(
-    id: Union[int, List[int]],
-    fromGroup: bool = False,
-) -> Censor:
-    if isinstance(id, int):
-        id = [id]
-
-    def check(bot: QQbot, context: Context) -> bool:
-        if isinstance(context.sender, GroupSender):
-            return context.sender.group.id in id
-        elif fromGroup and isinstance(context.sender, TempSender):
-            return context.sender.group.id in id
-        return False
-
-    return Censor(check)
-
-
-def isGroupAdmin(includeOwner: bool = True, fromGroup: bool = True) -> Censor:
-    if includeOwner:
-        lst = ['OWNER', 'ADMINISTRATOR']
+def isAdminCheck(bot: QQbot, ctx: Context) -> bool:
+    if bot.adminQid and ctx.sender.id == bot.adminQid:
+        return True
     else:
-        lst = ['ADMINISTRATOR']
+        return False
 
-    def check(bot: QQbot, context: Context) -> bool:
-        if isinstance(context.sender, GroupSender):
-            return context.sender.permission in lst
-        elif fromGroup and isinstance(context.sender, TempSender):
-            return context.sender.permission in lst
+
+isAdmin = Censor(isAdminCheck)
+
+
+def isPerson(id: int | list[int]) -> Censor:
+    _id = [id] if isinstance(id, int) else id
+
+    def check(bot: QQbot, ctx: Context) -> bool:
+        if ctx.sender.id in _id:
+            return True
         return False
 
     return Censor(check)
 
 
-def isGroupOwner(fromGroup: bool = True) -> Censor:
+def inGroup(id: Union[int, list[int]]) -> Censor:
+    _id = [id] if isinstance(id, int) else id
+
     def check(bot: QQbot, context: Context) -> bool:
         if isinstance(context.sender, GroupSender):
-            return context.sender.permission == 'OWNER'
-        elif fromGroup and isinstance(context.sender, TempSender):
-            return context.sender.permission == 'OWNER'
+            return context.sender.group.id in _id
+        elif isinstance(context.sender, TempSender):
+            return context.sender.group.id in _id
         return False
 
     return Censor(check)
+
+
+def isGroup(id: Union[int, list[int]]) -> Censor:
+    _id = [id] if isinstance(id, int) else id
+
+    def check(bot: QQbot, context: Context) -> bool:
+        if isinstance(context.sender, GroupSender):
+            return context.sender.group.id in _id
+        return False
+
+    return Censor(check)
+
+
+def fromGroup(id: Union[int, list[int]]) -> Censor:
+    _id = [id] if isinstance(id, int) else id
+
+    def check(bot: QQbot, context: Context) -> bool:
+        if isinstance(context.sender, TempSender):
+            return context.sender.group.id in _id
+        return False
+
+    return Censor(check)
+
+
+def isGroupAdmincheck(bot: QQbot, context: Context) -> bool:
+    if isinstance(context.sender, GroupSender):
+        return context.sender.permission in ['OWNER', 'ADMINISTRATOR']
+    elif isinstance(context.sender, TempSender):
+        return context.sender.permission in ['OWNER', 'ADMINISTRATOR']
+    return False
+
+
+isGroupAdmin = Censor(isGroupAdmincheck)
+
+
+def isGroupOwnercheck(bot: QQbot, context: Context) -> bool:
+    if isinstance(context.sender, GroupSender):
+        return context.sender.permission == 'OWNER'
+    elif fromGroup and isinstance(context.sender, TempSender):
+        return context.sender.permission == 'OWNER'
+    return False
+
+
+isGroupOwner = Censor(isGroupOwnercheck)
 
 
 def hasType_str(type: str) -> Censor:
@@ -159,17 +167,13 @@ def selfAtcheck(bot: QQbot, context: Context) -> bool:
 isAtSelf = Censor(selfAtcheck)
 
 
-def isText(s: str) -> Censor:
-    return Censor(lambda bot, context: context.text == s)
+def isText(regExp: str) -> Censor:
+    """
+    use `re.search`
+    """
+    def check(bot: QQbot, ctx: Context) -> bool:
+        if re.search(regExp, ctx.text):
+            return True
+        return False
 
-
-def isTextContain(s: str) -> Censor:
-    return Censor(lambda bot, context: s in context.text)
-
-
-def isTextStartWith(s: str) -> Censor:
-    return Censor(lambda bot, context: context.text[:len(s)] == s)
-
-
-def isTextEndWith(s: str) -> Censor:
-    return Censor(lambda bot, context: context.text[-len(s):] == s)
+    return Censor(check)
