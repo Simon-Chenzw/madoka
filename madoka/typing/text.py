@@ -119,12 +119,14 @@ class ImageText(Text):
     imageId: Optional[str]
     url: Optional[str]
     path: Optional[str]
+    base64: Optional[str]
 
     def __init__(
         self,
         path: Optional[str] = None,
         url: Optional[str] = None,
         imageId: Optional[str] = None,
+        base64: Optional[str] = None,
         type: Literal['Image'] = 'Image',
     ) -> None:
         """
