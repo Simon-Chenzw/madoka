@@ -15,40 +15,38 @@ class Text(BaseModel, extra='forbid'):
     type: str
 
     class TypeMap:
+        type_key: str = 'type'
         types: dict[str, Type[Text]] = {}
+        extra_name: str = 'ExtraText'
         extra: Type[Text]
 
         @classmethod
-        def add(cls, name: str, cls_: Type[Text]) -> None:
-            if name not in cls.types:
-                cls.types[name] = cls_
-            else:
-                raise ValueError("type can't have same typename")
+        def add(cls, ins_cls: Type[Text]) -> None:
+            if ins_cls.__name__ == cls.extra_name:
+                cls.extra = ins_cls
+                return
 
-        @classmethod
-        def get(cls, name: str) -> Type[Text]:
-            return cls.types.get(name, cls.extra)
+            field = ins_cls.__fields__.get(cls.type_key)
+            if field is None:
+                return
 
-    def __init_subclass__(
-        cls: Type[Text],
-        **kwargs,
-    ) -> None:
-        if 'type' in cls.__fields__ and get_origin(
-                cls.__fields__['type'].type_) is Literal:
-            cls.TypeMap.add(
-                get_args(cls.__fields__['type'].type_)[0],
-                cls,
-            )
-        elif cls.__name__ == 'ExtraText':
-            cls.TypeMap.extra = cls
-        return super().__init_subclass__(**kwargs)
+            if get_origin(field.type_) is Literal:
+                for name in get_args(field.type_):
+                    assert name not in cls.types, "can't have same key value"
+                    cls.types[name] = ins_cls
+
+    def __init_subclass__(cls, **kwargs) -> None:
+        cls.TypeMap.add(cls)
+        return super().__init_subclass__()
 
     def __new__(cls, *args, **kwargs) -> Type[Text]:
+        key = cls.TypeMap.type_key
         if cls is Text:
-            if 'type' in kwargs:
-                return super().__new__(cls.TypeMap.get(kwargs['type']))
+            if key in kwargs:
+                new_cls = cls.TypeMap.types.get(kwargs[key], cls.TypeMap.extra)
+                return super().__new__(new_cls)
             else:
-                return super().__new__(cls.TypeMap.extra)
+                return super().__new__(cls.TypeMap.extra)  # type: ignore
         else:
             return super().__new__(cls)
 
@@ -94,6 +92,7 @@ class AtText(Text):
 
 class AtAllText(Text):
     type: Literal['AtAll']
+    target: int
 
 
 class FaceText(Text):

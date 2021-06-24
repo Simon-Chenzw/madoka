@@ -23,16 +23,30 @@ class Context(BaseModel, extra='forbid'):
     sender: Sender
 
     class TypeMap:
+        type_key: str = 'type'
         types: dict[str, Type[Context]] = {}
 
-    def __init_subclass__(cls: Type[Context], **kwargs) -> None:
-        assert get_origin(cls.__fields__['type'].type_) is Literal
-        cls.TypeMap.types[get_args(cls.__fields__['type'].type_)[0]] = cls
-        return super().__init_subclass__(**kwargs)
+        @classmethod
+        def add(cls, ins_cls: Type[Context]) -> None:
+            field = ins_cls.__fields__.get(cls.type_key)
+            if field is None: return
+            if get_origin(field.type_) is Literal:
+                for name in get_args(field.type_):
+                    assert name not in cls.types, "can't have same key value"
+                    cls.types[name] = ins_cls
+
+    def __init_subclass__(cls, **kwargs) -> None:
+        cls.TypeMap.add(cls)
+        return super().__init_subclass__()
 
     def __new__(cls, *args, **kwargs) -> Type[Context]:
+        key = cls.TypeMap.type_key
         if cls is Context:
-            return super().__new__(cls.TypeMap.types[kwargs['type']])
+            if key in kwargs:
+                new_cls = cls.TypeMap.types.get(kwargs[key], Context)
+                return super().__new__(new_cls)  # type: ignore
+            else:
+                return super().__new__(Context)
         else:
             return super().__new__(cls)
 
