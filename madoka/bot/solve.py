@@ -43,10 +43,12 @@ class SolveUnit(BotBase):
     def addFunction(self, check: Optional[ctxCensor] = None) -> ctxFuncWrap:
         def wrapper(func: ctxFuncGen) -> ctxFuncGen:
             def inner(bot: QQbot, context: Context) -> Ret:
-                if check(bot, context):
+                if check(bot, context): # type: ignore
                     return func(bot, context)
-
-            self._ctxLst.append(inner)
+            if not check:
+                self._ctxLst.append(func)
+            else:
+                self._ctxLst.append(inner)
             return func
 
         return wrapper
