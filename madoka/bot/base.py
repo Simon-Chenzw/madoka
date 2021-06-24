@@ -7,6 +7,7 @@ from itertools import count
 from typing import (TYPE_CHECKING, Any, AsyncGenerator, Coroutine, Literal,
                     Optional)
 
+from cachetools import TTLCache
 from websockets.exceptions import ConnectionClosedError
 from websockets.legacy import client
 
@@ -16,6 +17,14 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 MAX_QUEUE_SIZE = 10000
+
+
+class FutureCache(TTLCache[str, asyncio.Future[dict[str, Any]]]):
+    def popitem(self):
+        k, v = super().popitem()
+        logger.info(f"It's too long to receving response of syncId={k}")
+        v.set_exception(TimeoutError("Receive response timeout"))
+        return k, v
 
 
 class BotBase:
@@ -37,7 +46,7 @@ class BotBase:
         self._wsurl = f"{protocol}://{host}/{channel}?verifyKey={verifyKey}&qq={qid}"
 
         self._curSyncId = count()
-        self._futures: dict[str, asyncio.Future[dict[str, Any]]] = {}
+        self._futures = FutureCache(maxsize=10000, ttl=3600)
         self._tasks: list[asyncio.Task] = []
 
         # self._bot just use for typing hinting
@@ -105,10 +114,10 @@ class BotBase:
                 logger.info(f"Received Post: {data=}")
                 yield data
             else:
-                if syncId in self._futures:
+                future = self._futures.pop(syncId, None)
+                if future:
                     logger.info(f"Received result: {syncId=} {data=}")
-                    self._futures[syncId].set_result(data)
-                    del self._futures[syncId]
+                    future.set_result(data)
                 else:
                     logger.debug(f"Ignore result: {syncId=} {data=}")
 

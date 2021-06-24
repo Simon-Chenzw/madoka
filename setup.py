@@ -15,6 +15,7 @@ setup(
         'websockets>=8.1',
         'pydantic>=1.8',
         'croniter>=1.0',
+        'cachetools>=4.2',
     ],
     extras_require={},
     # description
