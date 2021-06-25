@@ -25,7 +25,7 @@ class QQbot(ApiUnit, ScheduleUnit, SolveUnit):
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> bool:
         catch = await super().__aexit__(exc_type, exc_val, exc_tb)
         if exc_type:
-            logger.critical(f"QQbot crashed: qid={self.qid}")
+            logger.critical(f"QQbot crashed: qid={self.qid} {exc_val}")
         else:
             logger.info(f"QQbot exit: qid={self.qid}")
         return catch
@@ -47,8 +47,5 @@ class QQbot(ApiUnit, ScheduleUnit, SolveUnit):
             async with self as bot:
                 await bot.start()
 
-        logger.info("Simple running bot")
-        try:
-            asyncio.run(main())
-        except KeyboardInterrupt:
-            logger.info("exit because of KeyboardInterrupt")
+        logger.debug("Simple running bot")
+        asyncio.run(main())

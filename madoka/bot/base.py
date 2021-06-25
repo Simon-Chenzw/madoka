@@ -22,7 +22,7 @@ MAX_QUEUE_SIZE = 10000
 class FutureCache(TTLCache[str, asyncio.Future[dict[str, Any]]]):
     def popitem(self):
         k, v = super().popitem()
-        logger.info(f"It's too long to receving response of syncId={k}")
+        logger.warning(f"Receive response timeout syncId={k}")
         v.set_exception(TimeoutError("Receive response timeout"))
         return k, v
 
@@ -53,14 +53,14 @@ class BotBase:
         self._bot: QQbot = self  # type: ignore
 
     async def __aenter__(self) -> BotBase:
-        logger.info("Connect to Websocket Adapter")
+        logger.debug("Connect to Websocket Adapter")
         await self._wsconnect()
         self._session = json.loads(await self._ws.recv())['data']['session']
         logger.info(f"successfully connect: sessionKey={self._session}")
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> bool:
-        logger.info("Disconnect to Websocket Adapter")
+        logger.debug("Disconnect to Websocket Adapter")
         await self._ws.close()
         return False
 
@@ -75,7 +75,7 @@ class BotBase:
                 self._ws = await self._connect
             except:
                 if self._waitMirai != 1:
-                    logger.info(f"get api information failed: {cnt} times")
+                    logger.debug(f"get api information failed: {cnt} times")
                 if cnt != self._waitMirai:
                     await asyncio.sleep(3)
                 else:
@@ -104,22 +104,21 @@ class BotBase:
         return self._futures[syncId]
 
     async def _recv(self) -> AsyncGenerator[dict[str, Any], None]:
-        logger.info("Start receiving")
+        logger.debug("Start receiving")
         while True:
             resp = json.loads(await self._ws.recv())
-            logger.debug(f"Received: {resp=}")
             syncId: str = resp['syncId']
             data: dict[str, Any] = resp['data']
             if syncId == self._reservedSyncId:
-                logger.info(f"Received Post: {data=}")
+                logger.info(f"Received: {data=}")
                 yield data
             else:
                 future = self._futures.pop(syncId, None)
                 if future:
-                    logger.info(f"Received result: {syncId=} {data=}")
+                    logger.debug(f"Response: {syncId=} {data=}")
                     future.set_result(data)
                 else:
-                    logger.debug(f"Ignore result: {syncId=} {data=}")
+                    logger.debug(f"Response: {syncId=} {data=}")
 
     def _startTask(self, cor: Coroutine[None, None, None]) -> asyncio.Task:
         task = asyncio.create_task(cor)
@@ -131,11 +130,10 @@ class BotBase:
         try:
             await asyncio.gather(*self._tasks)
         except asyncio.CancelledError:
-            logger.info("Task cancelled")
+            logger.debug("Task cancelled")
         except ConnectionClosedError:
             logger.error(f"websockets connection closed")
             raise RuntimeError("websockets connection closed") from None
-        logger.info("Wait end")
 
     def stop(self) -> None:
         logger.info(f"Stoping Bot {self.qid}")

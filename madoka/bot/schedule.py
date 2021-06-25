@@ -124,7 +124,7 @@ class ScheduleUnit(BotBase):
             except:
                 logger.exception(f"schedule module: {task.func.__name__}")
 
-        logger.info(f"Start schedule")
+        logger.debug(f"Start schedule")
         while True:
             task = await self._timeQueue.get()
             if task.timestamp <= time.time():
@@ -133,7 +133,7 @@ class ScheduleUnit(BotBase):
                 try:
                     self._timeQueue.put_nowait(task.next())
                 except StopIteration:
-                    logger.info(f"Task end: {task.func.__name__}")
+                    logger.debug(f"Task end: {task.func.__name__}")
             else:
                 self._timeQueue.put_nowait(task)
                 await asyncio.sleep(1)

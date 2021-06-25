@@ -10,6 +10,8 @@ from typing import (TYPE_CHECKING, Any, Awaitable, Callable, Optional, Type,
 from ..typing import Context, Event
 from .base import BotBase
 
+from pydantic import ValidationError
+
 if TYPE_CHECKING:
     from .bot import QQbot
 
@@ -43,8 +45,9 @@ class SolveUnit(BotBase):
     def addFunction(self, check: Optional[ctxCensor] = None) -> ctxFuncWrap:
         def wrapper(func: ctxFuncGen) -> ctxFuncGen:
             def inner(bot: QQbot, context: Context) -> Ret:
-                if check(bot, context): # type: ignore
+                if check(bot, context):  # type: ignore
                     return func(bot, context)
+
             if not check:
                 self._ctxLst.append(func)
             else:
@@ -61,7 +64,7 @@ class SolveUnit(BotBase):
         return wrapper
 
     async def _solve(self):
-        logger.info("Start solving")
+        logger.debug("Start solving")
         async for data in self._recv():
             if data['type'][-7:] == "Message":
                 asyncio.create_task(self._solveCtx(data))
@@ -71,13 +74,17 @@ class SolveUnit(BotBase):
     async def _solveCtx(self, data: dict[str, Any]) -> None:
         async def solve(func: ctxFunc) -> None:
             try:
-                logger.debug(f"Context solve: func={func.__name__}\n {ctx=}")
                 ret = func(self._bot, ctx)
                 if inspect.isawaitable(ret): await ret
             except:
                 logger.exception(f"Context: func={func.__name__}\n {ctx=}")
 
-        ctx = Context.parse_obj(data)
+        try:
+            ctx = Context.parse_obj(data)
+        except ValidationError as e:
+            logger.exception(e.json())
+            return
+
         contextStore.set(ctx)
         for func in self._ctxLst:
             asyncio.create_task(solve(func))
@@ -85,13 +92,17 @@ class SolveUnit(BotBase):
     async def _solveEvent(self, data: dict[str, Any]) -> None:
         async def solve(func: eventFunc) -> None:
             try:
-                logger.debug(f"Event solve: func={func.__name__}\n {event=}")
                 ret = func(self._bot, event)
                 if inspect.isawaitable(ret): await ret
             except:
                 logger.exception(f"Event: func={func.__name__}\n {event=}")
 
-        event = Event.parse_obj(data)
+        try:
+            event = Event.parse_obj(data)
+        except ValidationError as e:
+            logger.exception(e.json())
+            return
+
         for k, v in self._eventLst.items():
             if isinstance(event, k):
                 for func in v:
