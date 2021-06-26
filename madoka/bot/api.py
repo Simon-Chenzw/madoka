@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from typing import Any, Iterable, Optional, Union
 
-from ..typing import (Context, FriendSender, GroupSender, PlainText,
-                      TempSender, Text)
+from ..typing import (Context, ForwardMessageNode, ForwardMessageText,
+                      FriendSender, GroupSender, PlainText, TempSender, Text)
 from .base import BotBase
 from .solve import contextStore
 
@@ -24,6 +25,35 @@ class ApiUnit(BotBase):
             return [message.dict()]
         else:
             return [text.dict() for text in message]
+
+    def pack(
+        self,
+        msgs: list[Message],
+        numero: bool = True,
+    ) -> ForwardMessageText:
+        """
+        Fake a ForwardMessageText to pack in one Text
+        """
+        nodes: list[ForwardMessageNode] = []
+        for i, msg in enumerate(msgs):
+            if isinstance(msg, str):
+                lst: list[Text] = [PlainText(msg)]
+            elif isinstance(msg, Text):
+                lst: list[Text] = [msg]
+            else:
+                lst: list[Text] = list(msg)
+            name = self._name
+            if numero:
+                name += f" - {i+1}/{len(msgs)}"
+            nodes.append(
+                ForwardMessageNode(
+                    senderId=self.qid,
+                    time=int(time.time()),
+                    senderName=name,
+                    messageChain=lst,
+                ))
+
+        return ForwardMessageText(nodes)  # type: ignore pylance's wrong lint
 
     def sendFriendMessage(
         self,

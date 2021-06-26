@@ -33,6 +33,7 @@ class BotBase:
         qid: int,
         host: str,
         verifyKey: str,
+        name: str = '[bot]',
         adminQid: Optional[int] = None,
         waitMirai: Optional[int] = None,
         channel: Literal['message', 'event', 'all'] = 'all',
@@ -40,6 +41,7 @@ class BotBase:
         reservedSyncId: int = -1,
     ) -> None:
         self.qid = qid
+        self._name = name
         self.adminQid = adminQid
         self._waitMirai = waitMirai
         self._reservedSyncId = str(reservedSyncId)
