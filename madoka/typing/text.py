@@ -131,7 +131,13 @@ class ImageText(Text):
         """
         :path: Need to be a relative path
         """
-        super().__init__(path=path, url=url, imageId=imageId, type=type)
+        super().__init__(
+            path=path,
+            url=url,
+            imageId=imageId,
+            type=type,
+            base64=base64,
+        )
 
 
 class FlashImageText(ImageText):
