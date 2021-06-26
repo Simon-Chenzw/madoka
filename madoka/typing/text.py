@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Literal, Optional, Type, get_args, get_origin
+from typing import Literal, Optional, Type, Union, get_args, get_origin
 
-from pydantic import BaseModel  # pylint: disable=no-name-in-module
+from pydantic import BaseModel, Field  # pylint: disable=no-name-in-module
 
 
 class Text(BaseModel, extra='forbid'):
@@ -142,6 +142,38 @@ class ImageText(Text):
 
 class FlashImageText(ImageText):
     type: Literal['FlashImage']
+
+
+class ForwardMessageNode(BaseModel):
+    senderId: int
+    time: int
+    senderName: str
+    messageChain: list[Text]
+    messageId: Optional[int]
+
+
+class ForwardMessageNodeById(BaseModel):
+    messageId: int
+
+
+class ForwardMessageText(Text):
+    type: Literal['Forward']
+    nodeList: list[Union[ForwardMessageNode, ForwardMessageNodeById]]
+
+    def __init__(
+        self,
+        nodeList: list[ForwardMessageNode | ForwardMessageNodeById | int],
+        type: Literal['Forward'] = 'Forward',
+    ) -> None:
+        for i, node in enumerate(nodeList):
+            if isinstance(node, int):
+                nodeList[i] = ForwardMessageNodeById(messageId=node)
+        super().__init__(nodeList=nodeList, type=type)
+
+    def iterNode(self) -> list[ForwardMessageNode]:
+        for node in self.nodeList:
+            assert isinstance(node, ForwardMessageNode)
+            yield node
 
 
 # TODO more Text type
